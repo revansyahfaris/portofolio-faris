@@ -18,7 +18,7 @@ const NODES: ResultNode[] = [
     id: '01',
     category: 'FULL-STACK SYSTEMS',
     title: 'Digital Footprint & SI-PATRA',
-    stat: '3.59 GPA',
+    stat: '3.61 GPA',
     subStat: 'A-RANK ACADEMIC',
     color: 'bg-teal-500',
     desc: 'Pengembangan arsitektur web scalable, integrasi database relasional, dan protokol enkripsi data.',
