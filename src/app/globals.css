@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    scroll-behavior: auto;
+  }
+
+  body {
+    background-color: var(--color-zinc-950, #09090b);
+    color: var(--color-zinc-100, #f4f4f5);
+    font-family: inherit;
+    overflow-x: hidden;
+  }
+
+  canvas {
+    touch-action: none;
+  }
+}
+
+/* Atlus Kinetic Entrance Animations */
+@keyframes kineticSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-40px) rotate(-6deg) skewX(-6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) rotate(-3deg) skewX(0deg);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(220, 38, 38, 0.8);
+  }
+}
+
+.animate-kinetic-entry {
+  animation: kineticSlideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s infinite;
+}
+
+/* Kinetic Scroll Animations (0ms JS Overhead) */
+.atlus-scroll-hidden {
+  opacity: 0;
+  transform: translateY(40px) rotate(-4deg) skewX(-4deg);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.atlus-scroll-visible {
+  opacity: 1;
+  transform: translateY(0) rotate(-1deg) skewX(0deg);
+}
