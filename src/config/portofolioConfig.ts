@@ -9,7 +9,7 @@ export const portofolioConfig = {
     classYear: "UNDIP Computer Engineering '24",
     location: 'Semarang, Indonesia',
     status: 'READY FOR QUEST',
-    gpa: '3.59',
+    gpa: '3.61',
     bioShort:
       'Membangun arsitektur perangkat lunak scalable, protokol enkripsi jaringan, hingga sistem hardware IoT interaktif. Founder & UI/UX Lead di Studio Meja Belakang.',
     // Human/Personal story snippet (Bikin terasa autentik!)
