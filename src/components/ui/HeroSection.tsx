@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { Volume2, VolumeX, ArrowRight } from 'lucide-react';
 import { portofolioConfig } from '../../config/portofolioConfig';
 import { sfx } from '../../lib/sfx';
 import QuestModal from './QuestModal';
 import Image from 'next/image';
+import StarsBackground from './StarsBackground';
 
 interface MenuItem {
   id: string;
@@ -16,70 +17,140 @@ interface MenuItem {
 }
 
 const MENU_ITEMS: MenuItem[] = [
-  {
-    id: 'profile',
-    label: 'PROFILE',
-    targetId: 'profile',
-    textSize: 'text-3xl md:text-5xl',
-    transformStyle: 'rotate(24deg) skewX(16deg) translate3d(110px, -90px, 0)',
-  },
-  {
-    id: 'skills',
-    label: 'SKILLS',
-    targetId: 'skills',
-    textSize: 'text-3xl md:text-5xl',
-    transformStyle: 'rotate(18deg) skewX(12deg) translate3d(55px, -50px, 0)',
-  },
-  {
-    id: 'experience',
-    label: 'EXPERIENCE',
-    targetId: 'experience',
-    textSize: 'text-3xl md:text-5xl',
-    transformStyle: 'rotate(12deg) skewX(8deg) translate3d(30px, -60px, 0)',
-  },
-  {
-    id: 'achievement',
-    label: 'ACHIEVEMENT',
-    targetId: 'achievement',
-    textSize: 'text-3xl md:text-5xl',
-    transformStyle: 'rotate(6deg) skewX(4deg) translate3d(10px, -35px, 0)',
-  },
-  {
-    id: 'academy',
-    label: 'ACADEMY',
-    targetId: 'academy',
-    textSize: 'text-3xl md:text-5xl',
-    transformStyle: 'rotate(0deg) skewX(0deg) translate3d(0px, 0, 0)',
-  },
-  {
-    id: 'company',
-    label: 'COMPANY',
-    targetId: 'company',
-    textSize: 'text-3xl md:text-5xl',
-    transformStyle: 'rotate(-6deg) skewX(-4deg) translate3d(10px, 20px, 0)',
-  },
-  {
-    id: 'github',
-    label: 'GITHUB',
-    targetId: 'github',
-    textSize: 'text-3xl md:text-5xl',
-    transformStyle: 'rotate(-12deg) skewX(-8deg) translate3d(30px, 30px, 0)',
-  },
-  {
-    id: 'quest',
-    label: 'QUEST',
-    targetId: 'projects',
-    textSize: 'text-3xl md:text-5xl',
-    transformStyle: 'rotate(-18deg) skewX(-12deg) translate3d(55px, 40px, 0)',
-  },
-  {
-    id: 'connect',
-    label: 'CONNECT',
-    targetId: 'contact',
-    textSize: 'text-3xl md:text-5xl',
-    transformStyle: 'rotate(-24deg) skewX(-16deg) translate3d(110px, 90px, 0)',
-  },
+  { id: 'profile', label: 'PROFILE', targetId: 'profile', textSize: 'text-3xl md:text-5xl', transformStyle: 'rotate(24deg) skewX(16deg) translate3d(110px, -90px, 0)' },
+  { id: 'skills', label: 'SKILLS', targetId: 'skills', textSize: 'text-3xl md:text-5xl', transformStyle: 'rotate(18deg) skewX(12deg) translate3d(65px, -50px, 0)' },
+  { id: 'experience', label: 'EXPERIENCE', targetId: 'experience', textSize: 'text-3xl md:text-5xl', transformStyle: 'rotate(12deg) skewX(8deg) translate3d(30px, -60px, 0)' },
+  { id: 'achievement', label: 'ACHIEVEMENT', targetId: 'achievement', textSize: 'text-3xl md:text-5xl', transformStyle: 'rotate(6deg) skewX(4deg) translate3d(10px, -35px, 0)' },
+  { id: 'academy', label: 'ACADEMY', targetId: 'academy', textSize: 'text-3xl md:text-5xl', transformStyle: 'rotate(0deg) skewX(0deg) translate3d(0px, 0, 0)' },
+  { id: 'company', label: 'COMPANY', targetId: 'company', textSize: 'text-3xl md:text-5xl', transformStyle: 'rotate(-6deg) skewX(-4deg) translate3d(10px, 20px, 0)' },
+  { id: 'github', label: 'GITHUB', targetId: 'github', textSize: 'text-3xl md:text-5xl', transformStyle: 'rotate(-12deg) skewX(-8deg) translate3d(30px, 30px, 0)' },
+  { id: 'quest', label: 'QUEST', targetId: 'projects', textSize: 'text-3xl md:text-5xl', transformStyle: 'rotate(-18deg) skewX(-12deg) translate3d(65px, 40px, 0)' },
+  { id: 'connect', label: 'CONNECT', targetId: 'contact', textSize: 'text-3xl md:text-5xl', transformStyle: 'rotate(-24deg) skewX(-16deg) translate3d(110px, 90px, 0)' },
 ];
+
+/* ============================================================
+   MENU ITEM ROW — dipisah + di-memo supaya waktu selectedIndex
+   berubah, cuma item lama & baru yang re-render, bukan semua 9.
+   ============================================================ */
+interface MenuItemRowProps {
+  item: MenuItem;
+  isSelected: boolean;
+  effectsReady: boolean;
+  index: number;
+  onClick: (targetId: string, index: number) => void;
+  onHover: (targetId: string, index: number) => void;
+}
+
+const MenuItemRow = memo(function MenuItemRow({
+  item,
+  isSelected,
+  effectsReady,
+  index,
+  onClick,
+  onHover,
+}: MenuItemRowProps) {
+  return (
+    <div
+      onClick={() => onClick(item.targetId, index)}
+      onMouseEnter={() => onHover(item.targetId, index)}
+      className={`group relative flex justify-end cursor-pointer transition-all duration-200 origin-left ${
+        isSelected ? 'z-0' : 'z-20'
+      }`}
+      style={{ transform: item.transformStyle }}
+    >
+      <div
+        className="relative inline-block"
+        style={{ perspective: '350px', perspectiveOrigin: '0% 50%' }}
+      >
+        <div
+          className="relative inline-block"
+          style={{
+            transform: `rotateY(${isSelected ? 10 : 22}deg) scale(1.3)`,
+            transformOrigin: 'right center',
+            transformStyle: 'preserve-3d',
+            backfaceVisibility: 'hidden',
+            transition: 'transform 200ms ease',
+          }}
+        >
+          {/* GRUNGE FLAME — animasi di-pause total saat tidak selected,
+              jadi browser gak ngitung transform tiap frame buat 8 item lain */}
+          <div
+            className="absolute inset-0 -z-10 overflow-visible pointer-events-none select-none transition-opacity duration-150"
+            style={{
+              opacity: isSelected && effectsReady ? 1 : 0,
+              // hindari klik-through & paint saat gak kepake
+              visibility: isSelected ? 'visible' : 'hidden',
+            }}
+          >
+            <div
+              className="absolute inset-y-[-85%] right-[-10%] w-[180%] bg-zinc-950 grunge-jitter-a"
+              style={{
+                clipPath:
+                  'polygon(15% 100%, 30% 68%, 10% 50%, 38% 35%, 20% 15%, 52% 25%, 48% -5%, 78% 20%, 62% 42%, 95% 48%, 68% 62%, 88% 88%, 52% 72%, 40% 100%)',
+                animationPlayState: isSelected ? 'running' : 'paused',
+              }}
+            />
+            <div
+              className="absolute inset-y-[-75%] right-0 w-[150%] bg-red-600 grunge-jitter-a shadow-[0_0_25px_rgba(220,38,38,0.8)]"
+              style={{
+                clipPath:
+                  'polygon(20% 100%, 35% 70%, 15% 55%, 40% 40%, 25% 20%, 55% 30%, 50% 0%, 75% 25%, 65% 45%, 90% 50%, 70% 65%, 85% 85%, 55% 75%, 45% 100%)',
+                animationPlayState: isSelected ? 'running' : 'paused',
+              }}
+            />
+            <div
+              className="absolute inset-y-[-60%] right-0 w-[125%] bg-[#FF5500] grunge-jitter-b"
+              style={{
+                clipPath:
+                  'polygon(30% 100%, 40% 75%, 20% 60%, 45% 45%, 35% 25%, 60% 35%, 55% 5%, 80% 30%, 68% 50%, 92% 55%, 72% 68%, 88% 88%, 60% 78%, 50% 100%)',
+                opacity: 0.95,
+                backgroundImage:
+                  'radial-gradient(rgba(0, 0, 0, 0.25) 15%, transparent 16%)',
+                backgroundSize: '6px 6px',
+                animationPlayState: isSelected ? 'running' : 'paused',
+              }}
+            />
+            <div
+              className="absolute inset-y-[-40%] right-[5%] w-[90%] bg-amber-300 grunge-jitter-c"
+              style={{
+                clipPath:
+                  'polygon(35% 100%, 45% 78%, 28% 62%, 48% 48%, 40% 30%, 62% 38%, 58% 10%, 78% 32%, 68% 52%, 90% 58%, 74% 70%, 86% 88%, 62% 80%, 52% 100%)',
+                opacity: 0.9,
+                animationPlayState: isSelected ? 'running' : 'paused',
+              }}
+            />
+            <div
+              className="absolute inset-y-[-20%] right-[-5%] w-[150%] bg-red-600/60 grunge-jitter-a"
+              style={{
+                clipPath:
+                  'polygon(25% 100%, 38% 72%, 18% 58%, 42% 42%, 28% 22%, 58% 32%, 52% 2%, 78% 28%, 68% 48%, 92% 52%, 72% 68%, 88% 88%, 58% 78%, 48% 100%)',
+                mixBlendMode: 'screen',
+                animationPlayState: isSelected ? 'running' : 'paused',
+              }}
+            />
+          </div>
+
+          <div
+            className={`relative inline-block text-right px-4 py-0.5 transition-colors duration-150 ${
+              isSelected
+                ? 'bg-red-600 text-zinc-950 shadow-[0_0_35px_rgba(220,38,38,0.9)] z-30'
+                : 'bg-transparent text-white group-hover:bg-red-600 group-hover:text-zinc-950'
+            }`}
+            style={{ clipPath: 'polygon(0 0, 95% 15%, 100% 85%, 0 100%)' }}
+          >
+            <h1
+              className={`font-serif font-black ${item.textSize} text-right tracking-tighter uppercase leading-none ${
+                isSelected ? 'text-zinc-950' : 'text-white group-hover:text-zinc-950'
+              }`}
+            >
+              {item.label}
+            </h1>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export default function HeroSection() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -89,6 +160,12 @@ export default function HeroSection() {
   const [effectsReady, setEffectsReady] = useState(false);
 
   const isLockRef = useRef(false);
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const selectedIndexRef = useRef(selectedIndex);
+  useEffect(() => {
+    selectedIndexRef.current = selectedIndex;
+  }, [selectedIndex]);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setEffectsReady(true));
@@ -103,36 +180,25 @@ export default function HeroSection() {
           e.preventDefault();
           return;
         }
-
-        if (e.deltaY > 0) {
-          if (selectedIndex < MENU_ITEMS.length - 1) {
-            e.preventDefault();
-            isLockRef.current = true;
-            sfx.playHover();
-            setSelectedIndex((prev) => prev + 1);
-
-            setTimeout(() => {
-              isLockRef.current = false;
-            }, 200);
-          }
-        } else if (e.deltaY < 0) {
-          if (selectedIndex > 0) {
-            e.preventDefault();
-            isLockRef.current = true;
-            sfx.playHover();
-            setSelectedIndex((prev) => prev - 1);
-
-            setTimeout(() => {
-              isLockRef.current = false;
-            }, 200);
-          }
+        const current = selectedIndexRef.current;
+        if (e.deltaY > 0 && current < MENU_ITEMS.length - 1) {
+          e.preventDefault();
+          isLockRef.current = true;
+          sfx.playHover();
+          setSelectedIndex(current + 1);
+          setTimeout(() => { isLockRef.current = false; }, 60); // sedikit dipercepat
+        } else if (e.deltaY < 0 && current > 0) {
+          e.preventDefault();
+          isLockRef.current = true;
+          sfx.playHover();
+          setSelectedIndex(current - 1);
+          setTimeout(() => { isLockRef.current = false; }, 60);
         }
       }
     };
-
     window.addEventListener('wheel', handleWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleWheel);
-  }, [selectedIndex]);
+  }, []);
 
   // Keyboard Event: Tekan 'M' untuk Glitch
   useEffect(() => {
@@ -153,14 +219,26 @@ export default function HeroSection() {
     if (!sfxEnabled) sfx.playSelect();
   };
 
-  const handleMenuClick = (targetId: string, index: number) => {
+  // Debounce hover: gerak cepat lintas menu gak spam setState + sfx
+  const handleMenuSelect = useCallback((targetId: string, index: number) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = setTimeout(() => {
+      setSelectedIndex((prev) => {
+        if (prev !== index) sfx.playHover();
+        return index;
+      });
+    }, 30);
+  }, []);
+
+  const handleMenuClick = useCallback((targetId: string, index: number) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     sfx.playSelect();
     setSelectedIndex(index);
     const element = document.getElementById(targetId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
-  };
+  }, []);
 
   return (
     <div
@@ -171,71 +249,50 @@ export default function HeroSection() {
       <QuestModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <div
-          className="absolute inset-0 bg-gradient-to-b from-zinc-950/90 via-zinc-950/50 to-transparent z-0"
-          style={{ mixBlendMode: 'overlay' }}
-        >
-          <div className="w-full h-full">
-            <Image
-              src="/assets/hero/background.webp"
-              alt="background"
-              fill
-              priority
-              className="object-cover"
-              style={{
-                filter: 'grayscale(0) contrast(5) brightness(1)',
-              }}
-            />
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <div className="w-full h-full relative hero-breathe">
+            <StarsBackground />
           </div>
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/80 via-transparent to-zinc-950/90 z-0" />
         </div>
-        
       </div>
-      
-      {/* BACKGROUND IMAGE - BULLETPROOF UNTUK BROWSER BER-TAB & FULLSCREEN */}
-      <div className="absolute inset-0 z-5 overflow-hidden pointer-events-none">
+
+      {/* BACKGROUND IMAGE */}
+      <div className="absolute inset-0 z-[5] overflow-hidden pointer-events-none">
         <div
           className="absolute top-0 right-0 w-[80vw] sm:w-[60vw] lg:w-[45vw]"
-          style={{
-            aspectRatio: '16 / 9',
-          }}
+          style={{ aspectRatio: '16 / 9' }}
         >
-          {/* WRAPPER BARU KHUSUS BUAT BREATHING ANIMATION */}
           <div className="w-full h-full hero-breathe">
             <Image
               src="/assets/hero/hero-bg-dekstop.png"
               alt="Hero Artwork"
               fill
               priority
+              sizes="(max-width: 640px) 80vw, (max-width: 1024px) 60vw, 45vw"
               className="object-cover"
               style={{
                 objectPosition: 'top 30% right 25%',
                 transform: 'scale(3.2) translateX(15%) translateY(0%)',
                 transformOrigin: 'top right',
-                // filter: `
-                //   drop-shadow(1px 0 0 white)
-                //   drop-shadow(-1px 0 0 white)
-                //   drop-shadow(0 1px 0 white)
-                //   drop-shadow(0 -1px 0 white)
-                // `,
               }}
             />
           </div>
         </div>
-
         <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/55 to-transparent z-10" />
       </div>
 
-      {/* ANGKA URUTAN BESAR - POJOK KANAN BAWAH HERO SECTION (ala Persona) */}
-      <div className="pointer-events-none select-none absolute -bottom-6 right-2 md:right-8 z-10 overflow-hidden w-[28vw] max-w-[420px] text-right">
+      {/* ANGKA URUTAN BESAR */}
+      <div className="pointer-events-none select-none absolute -rotate-90 top-32 right-2 md:right-8 z-0 w-[7vw] max-w-[420px] text-right">
         <span
           key={selectedIndex}
-          className="block font-serif font-black text-white/10 leading-none"
+          className="block font-serif font-black text-white leading-none"
           style={{
-            fontSize: 'clamp(180px, 28vw, 420px)',
+            fontSize: 'clamp(32px, 16vw, 240px)',
             fontVariantNumeric: 'lining-nums tabular-nums',
           }}
         >
-          {selectedIndex + 1}
+          {"0"}{selectedIndex + 1}
         </span>
       </div>
 
@@ -268,139 +325,35 @@ export default function HeroSection() {
         </div>
       </header>
 
-      {/* 2. MAIN RADIAL CURVED VANISHING POINT MENU (RATA KIRI) */}
+      {/* 2. MAIN MENU */}
       <main className="relative z-10 my-auto py-2 flex flex-col justify-center items-start w-full max-w-xl mr-auto">
-        
-        {/* CONTAINER PERSPECTIVE ARENA */}
-        <div 
+        <div
           className="flex flex-col items-end space-y-1.5 w-full my-2 transition-transform duration-300 origin-left translate-y-5"
-          style={{
-            perspective: '1000px',
-            perspectiveOrigin: '0% 50%',
-          }}
+          style={{ perspective: '1000px', perspectiveOrigin: '0% 50%' }}
         >
-          {MENU_ITEMS.map((item, index) => {
-            const isSelected = selectedIndex === index;
-
-            return (
-              <div
-                key={item.id}
-                onClick={() => handleMenuClick(item.targetId, index)}
-                onMouseEnter={() => {
-                  sfx.playHover();
-                  setSelectedIndex(index);
-                }}
-                className={`group relative flex justify-end cursor-pointer transition-all duration-200 origin-left ${
-                  isSelected ? 'z-0' : 'z-20'
-                }`}
-                style={{
-                  transform: item.transformStyle,
-                }}
-              >
-                {/* PERSPECTIVE CONTEXT - membungkus objek 3D (flame + box) */}
-                <div
-                  className="relative inline-block"
-                  style={{
-                    perspective: '350px',
-                    perspectiveOrigin: '0% 50%',
-                  }}
-                >
-                  {/* OBJEK 3D TUNGGAL - flame & box sekarang jadi SATU kesatuan yang diputar bareng */}
-                  <div
-                    className="relative inline-block"
-                    style={{
-                      transform: `rotateY(${isSelected ? 10 : 22}deg) scale(${isSelected ? 1.3 : 1.3}`, // selalu aktif, makin kuat saat selected
-                      transformOrigin: 'right center',
-                      transformStyle: 'preserve-3d',
-                      backfaceVisibility: 'hidden',
-                      transition: 'transform 200ms ease',
-                    }}
-                  >
-                    {/* GRUNGE FLAME - sekarang locked dengan box karena satu parent yang sama */}
-                    {isSelected && effectsReady && (
-                      <div className="absolute inset-0 -z-10 overflow-visible pointer-events-none select-none">
-                        <div
-                          className="absolute inset-y-[-85%] right-[-10%] w-[180%] bg-zinc-950 grunge-jitter-a"
-                          style={{
-                            clipPath: 'polygon(15% 100%, 30% 68%, 10% 50%, 38% 35%, 20% 15%, 52% 25%, 48% -5%, 78% 20%, 62% 42%, 95% 48%, 68% 62%, 88% 88%, 52% 72%, 40% 100%)',
-                            willChange: 'transform',
-                          }}
-                        />
-                        <div
-                          className="absolute inset-y-[-75%] right-0 w-[150%] bg-red-600 grunge-jitter-a shadow-[0_0_25px_rgba(220,38,38,0.8)]"
-                          style={{
-                            clipPath: 'polygon(20% 100%, 35% 70%, 15% 55%, 40% 40%, 25% 20%, 55% 30%, 50% 0%, 75% 25%, 65% 45%, 90% 50%, 70% 65%, 85% 85%, 55% 75%, 45% 100%)',
-                            willChange: 'transform',
-                          }}
-                        />
-                        <div
-                          className="absolute inset-y-[-60%] right-0 w-[125%] bg-[#FF5500] grunge-jitter-b"
-                          style={{
-                            clipPath: 'polygon(30% 100%, 40% 75%, 20% 60%, 45% 45%, 35% 25%, 60% 35%, 55% 5%, 80% 30%, 68% 50%, 92% 55%, 72% 68%, 88% 88%, 60% 78%, 50% 100%)',
-                            opacity: 0.95,
-                            willChange: 'transform',
-                            backgroundImage: 'radial-gradient(rgba(0, 0, 0, 0.25) 15%, transparent 16%)',
-                            backgroundSize: '6px 6px',
-                          }}
-                        />
-                        <div
-                          className="absolute inset-y-[-40%] right-[5%] w-[90%] bg-amber-300 grunge-jitter-c"
-                          style={{
-                            clipPath: 'polygon(35% 100%, 45% 78%, 28% 62%, 48% 48%, 40% 30%, 62% 38%, 58% 10%, 78% 32%, 68% 52%, 90% 58%, 74% 70%, 86% 88%, 62% 80%, 52% 100%)',
-                            opacity: 0.9,
-                            willChange: 'transform',
-                          }}
-                        />
-                        <div
-                          className="absolute inset-y-[-20%] right-[-5%] w-[150%] bg-red-600/60 grunge-jitter-a"
-                          style={{
-                            clipPath: 'polygon(25% 100%, 38% 72%, 18% 58%, 42% 42%, 28% 22%, 58% 32%, 52% 2%, 78% 28%, 68% 48%, 92% 52%, 72% 68%, 88% 88%, 58% 78%, 48% 100%)',
-                            mixBlendMode: 'screen',
-                            willChange: 'transform',
-                          }}
-                        />
-                      </div>
-                    )}
-
-                    {/* ATLUS CUTOUT TEXT - background & teks, tanpa transform sendiri (sudah ikut parent) */}
-                    <div
-                      className={`relative inline-block text-right px-4 py-0.5 transition-colors duration-150 ${
-                        isSelected
-                          ? 'bg-red-600 text-zinc-950 shadow-[0_0_35px_rgba(220,38,38,0.9)] z-30'
-                          : 'bg-transparent text-white group-hover:bg-red-600 group-hover:text-zinc-950'
-                      }`}
-                      style={{
-                        clipPath: 'polygon(0 0, 95% 15%, 100% 85%, 0 100%)',
-                      }}
-                    >
-                      <h1
-                        className={`font-serif font-black ${item.textSize} text-right tracking-tighter uppercase leading-none ${
-                          isSelected ? 'text-zinc-950' : 'text-white group-hover:text-zinc-950'
-                        }`}
-                      >
-                        {item.label}
-                      </h1>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {MENU_ITEMS.map((item, index) => (
+            <MenuItemRow
+              key={item.id}
+              item={item}
+              index={index}
+              isSelected={selectedIndex === index}
+              effectsReady={effectsReady}
+              onClick={handleMenuClick}
+              onHover={handleMenuSelect}
+            />
+          ))}
         </div>
       </main>
 
-      {/* 3. BAR MERAH DEKORATIF DI BAWAH DERETAN TEKS MENU */}
+      {/* 3. BAR MERAH */}
       <div className="relative z-30 w-full mt-6 mb-3 pointer-events-none flex justify-end">
         <div
           className="w-[50%] -mr-6 h-10 bg-red-600/90 -rotate-2 shadow-[0_0_30px_rgba(220,38,38,0.5)] flex items-center justify-end px-8 z-0"
           style={{ clipPath: 'polygon(2% 0, 100% 20%, 100% 100%, 0 80%)' }}
         >
           <span
-          className="font-serif font-black text-xs md:text-sm tracking-[0.3em] uppercase text-red-100 opacity-90 text-right"
-          style={{
-            textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-            rotate: '0.5deg',
-          }}
+            className="font-serif font-black text-xs md:text-sm tracking-[0.3em] uppercase text-red-100 opacity-90 text-right"
+            style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)', rotate: '0.5deg' }}
           >
             {portofolioConfig.personal.tagline.toUpperCase()}
           </span>
@@ -450,7 +403,7 @@ export default function HeroSection() {
         </button>
       </footer>
 
-      <style jsx>{`
+      <style jsx global>{`
         @keyframes grunge-jitter-a {
           0%   { transform: translate(0, 0) scaleY(1); }
           25%  { transform: translate(-2px, 3px) scaleY(0.94); }
@@ -474,9 +427,7 @@ export default function HeroSection() {
           0%, 100% { transform: scale(1) rotate(0deg); }
           50% { transform: scale(1.1) rotate(5deg); }
         }
-
-        .hero-breathe { animation: hero-breathe 12s ease-in-out infinite; }
-
+        .hero-breathe { animation: hero-breathe 12s ease-in-out infinite; will-change: transform; }
         .grunge-jitter-a { animation: grunge-jitter-a 1.8s steps(4, jump-end) infinite; }
         .grunge-jitter-b { animation: grunge-jitter-b 1.4s steps(3, jump-end) infinite; }
         .grunge-jitter-c { animation: grunge-jitter-c 1.1s steps(3, jump-end) infinite; }
