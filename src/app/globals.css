@@ -1,20 +1,37 @@
 @import "tailwindcss";
 
 @layer base {
-  html {
-    scroll-behavior: auto;
-  }
-
-  body {
+  html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden; /* 📍 Hilangkan scrollbar bawaan browser sepenuhnya */
     background-color: var(--color-zinc-950, #09090b);
     color: var(--color-zinc-100, #f4f4f5);
     font-family: inherit;
-    overflow-x: hidden;
   }
 
   canvas {
     touch-action: none;
   }
+}
+
+/* 📍 CUSTOM PERSONA HUD SCROLLBAR (Khusus untuk Container Main) */
+.custom-persona-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-persona-scroll::-webkit-scrollbar-track {
+  background: #09090b; /* zinc-950 */
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.custom-persona-scroll::-webkit-scrollbar-thumb {
+  background: #dc2626; /* red-600 */
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.8);
+}
+
+.custom-persona-scroll::-webkit-scrollbar-thumb:hover {
+  background: #ef4444; /* red-500 */
 }
 
 /* Atlus Kinetic Entrance Animations */
@@ -46,7 +63,7 @@
   animation: pulseGlow 2s infinite;
 }
 
-/* Kinetic Scroll Animations (0ms JS Overhead) */
+/* Kinetic Scroll Animations */
 .atlus-scroll-hidden {
   opacity: 0;
   transform: translateY(40px) rotate(-4deg) skewX(-4deg);
@@ -58,4 +75,12 @@
 .atlus-scroll-visible {
   opacity: 1;
   transform: translateY(0) rotate(-1deg) skewX(0deg);
+}
+
+/* Content Visibility untuk Offloading GPU */
+@supports (content-visibility: auto) {
+  section {
+    content-visibility: auto;
+    contain-intrinsic-size: 100vh;
+  }
 }

@@ -5,13 +5,13 @@ export const portofolioConfig = {
   personal: {
     name: 'Muhammad Faris Revansyah',
     nickname: 'Faris',
-    tagline: 'Architecting Digital & Hardware Realms',
+    tagline: 'An engineer with art in mind',
     classYear: "UNDIP Computer Engineering '24",
     location: 'Semarang, Indonesia',
     status: 'READY FOR QUEST',
     gpa: '3.61',
     bioShort:
-      'Membangun arsitektur perangkat lunak scalable, protokol enkripsi jaringan, hingga sistem hardware IoT interaktif. Founder & UI/UX Lead di Studio Meja Belakang.',
+      'Creating a software and/or hardware solution in an efficient, creative, and beutiful way!',
     // Human/Personal story snippet (Bikin terasa autentik!)
     bioHuman:
       'Saat tidak ngoding arsitektur database atau ngoprek mikrokontroler di lab, biasanya saya lagi mendesain UI/UX interaktif sambil ngopi atau bikin skrip cerita naratif.',
