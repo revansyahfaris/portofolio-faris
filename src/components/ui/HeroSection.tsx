@@ -29,8 +29,7 @@ const MENU_ITEMS: MenuItem[] = [
 ];
 
 /* ============================================================
-   MENU ITEM ROW — dipisah + di-memo supaya waktu selectedIndex
-   berubah, cuma item lama & baru yang re-render, bukan semua 9.
+   MENU ITEM ROW (Original Untouched)
    ============================================================ */
 interface MenuItemRowProps {
   item: MenuItem;
@@ -72,13 +71,11 @@ const MenuItemRow = memo(function MenuItemRow({
             transition: 'transform 200ms ease',
           }}
         >
-          {/* GRUNGE FLAME — animasi di-pause total saat tidak selected,
-              jadi browser gak ngitung transform tiap frame buat 8 item lain */}
+          {/* GRUNGE FLAME */}
           <div
             className="absolute inset-0 -z-10 overflow-visible pointer-events-none select-none transition-opacity duration-150"
             style={{
               opacity: isSelected && effectsReady ? 1 : 0,
-              // hindari klik-through & paint saat gak kepake
               visibility: isSelected ? 'visible' : 'hidden',
             }}
           >
@@ -162,6 +159,15 @@ export default function HeroSection() {
   const isLockRef = useRef(false);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const scrollToNextSection = () => {
+    sfx.playSelect();
+    // Targetkan ID section pertama di bawah hero, contoh: 'profile'
+    const nextSection = document.getElementById('profile');
+    if (nextSection) {
+      nextSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const selectedIndexRef = useRef(selectedIndex);
   useEffect(() => {
     selectedIndexRef.current = selectedIndex;
@@ -173,32 +179,32 @@ export default function HeroSection() {
   }, []);
 
   // SEQUENTIAL SCROLL LOCK FOR HERO MENU
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      if (window.scrollY < 80) {
-        if (isLockRef.current) {
-          e.preventDefault();
-          return;
-        }
-        const current = selectedIndexRef.current;
-        if (e.deltaY > 0 && current < MENU_ITEMS.length - 1) {
-          e.preventDefault();
-          isLockRef.current = true;
-          sfx.playHover();
-          setSelectedIndex(current + 1);
-          setTimeout(() => { isLockRef.current = false; }, 60); // sedikit dipercepat
-        } else if (e.deltaY < 0 && current > 0) {
-          e.preventDefault();
-          isLockRef.current = true;
-          sfx.playHover();
-          setSelectedIndex(current - 1);
-          setTimeout(() => { isLockRef.current = false; }, 60);
-        }
-      }
-    };
-    window.addEventListener('wheel', handleWheel, { passive: false });
-    return () => window.removeEventListener('wheel', handleWheel);
-  }, []);
+  // useEffect(() => {
+  //   const handleWheel = (e: WheelEvent) => {
+  //     if (window.scrollY < 80) {
+  //       if (isLockRef.current) {
+  //         e.preventDefault();
+  //         return;
+  //       }
+  //       const current = selectedIndexRef.current;
+  //       if (e.deltaY > 0 && current < MENU_ITEMS.length - 1) {
+  //         e.preventDefault();
+  //         isLockRef.current = true;
+  //         sfx.playHover();
+  //         setSelectedIndex(current + 1);
+  //         setTimeout(() => { isLockRef.current = false; }, 60);
+  //       } else if (e.deltaY < 0 && current > 0) {
+  //         e.preventDefault();
+  //         isLockRef.current = true;
+  //         sfx.playHover();
+  //         setSelectedIndex(current - 1);
+  //         setTimeout(() => { isLockRef.current = false; }, 60);
+  //       }
+  //     }
+  //   };
+  //   window.addEventListener('wheel', handleWheel, { passive: false });
+  //   return () => window.removeEventListener('wheel', handleWheel);
+  // }, []);
 
   // Keyboard Event: Tekan 'M' untuk Glitch
   useEffect(() => {
@@ -219,7 +225,6 @@ export default function HeroSection() {
     if (!sfxEnabled) sfx.playSelect();
   };
 
-  // Debounce hover: gerak cepat lintas menu gak spam setState + sfx
   const handleMenuSelect = useCallback((targetId: string, index: number) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     hoverTimeoutRef.current = setTimeout(() => {
@@ -242,22 +247,21 @@ export default function HeroSection() {
 
   return (
     <div
-      className={`relative min-h-[100dvh] w-full bg-zinc-950 text-white overflow-hidden font-sans select-none flex flex-col justify-between p-6 md:p-12 transition-filter duration-150 ${
+      className={`relative min-h-[100dvh] h-[100dvh] w-full bg-zinc-950 text-white overflow-hidden font-sans select-none flex flex-col justify-between p-4 sm:p-6 md:p-10 transition-filter duration-150 ${
         glitchActive ? 'invert contrast-200' : ''
       }`}
     >
       <QuestModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
+      {/* BACKGROUND STARS */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          <div className="w-full h-full relative hero-breathe">
-            <StarsBackground />
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/80 via-transparent to-zinc-950/90 z-0" />
+        <div className="w-full h-full scale-115 relative hero-breathe">
+          <StarsBackground />
         </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/80 via-transparent to-zinc-950/90 z-0" />
       </div>
 
-      {/* BACKGROUND IMAGE */}
+      {/* BACKGROUND CHARACTER ARTWORK */}
       <div className="absolute inset-0 z-[5] overflow-hidden pointer-events-none">
         <div
           className="absolute top-0 right-0 w-[80vw] sm:w-[60vw] lg:w-[45vw]"
@@ -286,7 +290,7 @@ export default function HeroSection() {
       <div className="pointer-events-none select-none absolute -rotate-90 top-32 right-2 md:right-8 z-0 w-[7vw] max-w-[420px] text-right">
         <span
           key={selectedIndex}
-          className="block font-serif font-black text-white leading-none"
+          className="block font-serif font-black text-white leading-none opacity-90"
           style={{
             fontSize: 'clamp(32px, 16vw, 240px)',
             fontVariantNumeric: 'lining-nums tabular-nums',
@@ -297,7 +301,7 @@ export default function HeroSection() {
       </div>
 
       {/* 1. TOP HUD / NAVBAR */}
-      <header className="relative z-30 flex items-center justify-between">
+      <header className="relative z-30 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3 text-xs font-mono">
           <button
             onClick={toggleSfx}
@@ -325,10 +329,10 @@ export default function HeroSection() {
         </div>
       </header>
 
-      {/* 2. MAIN MENU */}
+      {/* 2. MAIN MENU (Bebas mekar & geser di sisi kiri-tengah sampai bawah) */}
       <main className="relative z-10 my-auto py-2 flex flex-col justify-center items-start w-full max-w-xl mr-auto">
         <div
-          className="flex flex-col items-end space-y-1.5 w-full my-2 transition-transform duration-300 origin-left translate-y-5"
+          className="flex flex-col items-end space-y-1.5 w-full my-2 transition-transform duration-300 origin-left -translate-y-4"
           style={{ perspective: '1000px', perspectiveOrigin: '0% 50%' }}
         >
           {MENU_ITEMS.map((item, index) => (
@@ -345,63 +349,95 @@ export default function HeroSection() {
         </div>
       </main>
 
-      {/* 3. BAR MERAH */}
-      <div className="relative z-30 w-full mt-6 mb-3 pointer-events-none flex justify-end">
-        <div
-          className="w-[50%] -mr-6 h-10 bg-red-600/90 -rotate-2 shadow-[0_0_30px_rgba(220,38,38,0.5)] flex items-center justify-end px-8 z-0"
-          style={{ clipPath: 'polygon(2% 0, 100% 20%, 100% 100%, 0 80%)' }}
-        >
-          <span
-            className="font-serif font-black text-xs md:text-sm tracking-[0.3em] uppercase text-red-100 opacity-90 text-right"
-            style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)', rotate: '0.5deg' }}
+      {/* ========================================================================= */}
+      {/* 3. METAPHOR-STYLE FLOATING RIGHT BOTTOM HUD (Bar Merah + Bio + Stats)    */}
+      {/* ========================================================================= */}
+      <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 right-4 sm:right-6 md:right-10 z-30 flex flex-col items-end gap-2 max-w-md md:max-w-xl pointer-events-none">
+        
+        {/* BAR MERAH DEKORATIF */}
+        <div className="relative w-full flex justify-end px-4">
+          <div
+            className="w-[90%] sm:w-[75%] md:w-[70%] -mr-4 h-8 md:h-9 bg-red-600/90 -rotate-2 shadow-[0_0_25px_rgba(220,38,38,0.5)] flex items-center justify-end px-8 z-0"
+            style={{ clipPath: 'polygon(2% 0, 100% 20%, 100% 100%, 0 80%)' }}
           >
-            {portofolioConfig.personal.tagline.toUpperCase()}
-          </span>
-        </div>
-      </div>
-
-      {/* DESCRIPTION BIO BOX */}
-      <div
-        className="max-w-xl bg-zinc-900/90 border-r-4 border-red-600 p-3.5 shadow-2xl -rotate-1 ml-auto"
-        style={{ clipPath: 'polygon(5% 0, 100% 0, 100% 100%, 0 100%)' }}
-      >
-        <p className="text-xs md:text-sm text-zinc-300 font-sans leading-relaxed text-right">
-          {portofolioConfig.personal.bioShort}
-        </p>
-      </div>
-
-      {/* 4. BOTTOM METRICS HUD */}
-      <footer className="relative z-20 flex flex-col md:flex-row items-end md:items-center justify-between border-t-2 border-white/20 pt-4 gap-4">
-        <div className="flex items-center gap-4 sm:gap-6 font-serif">
-          <div className="bg-zinc-900 border border-zinc-800 px-4 py-2 -skew-x-12 flex items-center gap-3">
-            <span className="text-xs text-zinc-500 uppercase tracking-widest font-mono">GPA</span>
-            <span className="text-xl md:text-2xl font-black text-white">{portofolioConfig.personal.gpa}</span>
-          </div>
-
-          <div className="bg-zinc-900 border border-zinc-800 px-4 py-2 -skew-x-12 flex items-center gap-3">
-            <span className="text-xs text-zinc-500 uppercase tracking-widest font-mono">PROJECTS</span>
-            <span className="text-xl md:text-2xl font-black text-red-500">20+</span>
-          </div>
-
-          <div className="bg-zinc-900 border border-zinc-800 px-4 py-2 -skew-x-12 hidden sm:flex items-center gap-3">
-            <span className="text-xs text-zinc-500 uppercase tracking-widest font-mono">LOCATION</span>
-            <span className="text-sm font-bold text-teal-400">
-              {portofolioConfig.personal.location.toUpperCase()}
+            <span
+              className="font-serif font-black text-[10px] md:text-xs tracking-[0.25em] uppercase text-red-100 opacity-90 text-right whitespace-nowrap"
+              style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)', rotate: '1.05deg' }}
+            >
+              {portofolioConfig.personal.tagline.toUpperCase()}
             </span>
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            sfx.playSelect();
-            setIsModalOpen(true);
-          }}
-          onMouseEnter={() => sfx.playHover()}
-          className="group flex items-center gap-3 bg-red-600 hover:bg-red-500 text-white font-serif font-black px-8 py-3 -rotate-2 shadow-[4px_4px_0px_rgba(255,255,255,0.9)] transition uppercase tracking-wider text-sm cursor-pointer"
+        {/* BIO BOX */}
+        <div
+          className="bg-zinc-900/95 border-r-4 border-red-600 p-2.5 md:p-3.5 shadow-2xl -rotate-1 text-right pointer-events-auto backdrop-blur-md"
+          style={{ clipPath: 'polygon(4% 0, 100% 0, 100% 100%, 0 100%)' }}
         >
-          INITIATE QUEST <ArrowRight size={18} />
+          <p className="text-[11px] sm:text-xs md:text-sm text-zinc-300 font-sans leading-relaxed">
+            {portofolioConfig.personal.bioShort}
+          </p>
+        </div>
+
+        {/* COMPACT STATS & INITIATE QUEST BUTTON (METAPHOR HUD STYLE) */}
+        <div className="flex items-center gap-2 sm:gap-3 mt-1 pointer-events-auto">
+          {/* GPA STAT */}
+          <div className="bg-zinc-950/90 border border-zinc-800 px-3 py-1.5 -skew-x-12 flex items-center gap-2 shadow-lg backdrop-blur-sm">
+            <span className="text-[10px] text-zinc-500 font-mono">GPA</span>
+            <span className="text-xs md:text-sm font-black text-white">{portofolioConfig.personal.gpa}</span>
+          </div>
+
+          {/* PROJECTS STAT */}
+          <div className="bg-zinc-950/90 border border-zinc-800 px-3 py-1.5 -skew-x-12 flex items-center gap-2 shadow-lg backdrop-blur-sm">
+            <span className="text-[10px] text-zinc-500 font-mono">PROJECTS</span>
+            <span className="text-xs md:text-sm font-black text-red-500">20+</span>
+          </div>
+
+          {/* LOCATION (HIDDEN ON VERY SMALL SCREENS) */}
+          <div className="bg-zinc-950/90 border border-zinc-800 px-3 py-1.5 -skew-x-12 hidden sm:flex items-center gap-2 shadow-lg backdrop-blur-sm">
+            <span className="text-[10px] text-zinc-500 font-mono">LOC</span>
+            <span className="text-xs font-bold text-teal-400">
+              {portofolioConfig.personal.location.toUpperCase()}
+            </span>
+          </div>
+
+          {/* INITIATE QUEST ACTION BUTTON */}
+          <button
+            onClick={() => {
+              sfx.playSelect();
+              setIsModalOpen(true);
+            }}
+            onMouseEnter={() => sfx.playHover()}
+            className="group flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white font-serif font-black px-4 sm:px-6 py-2 -rotate-2 shadow-[3px_3px_0px_rgba(255,255,255,0.9)] transition uppercase tracking-wider text-xs md:text-sm cursor-pointer whitespace-nowrap"
+          >
+            INITIATE <ArrowRight size={16} />
+          </button>
+        </div>
+
+      </div>
+
+      {/* QUICK SCROLL HUD - POJOK KIRI BAWAH */}
+      <div className="absolute bottom-6 left-6 sm:left-10 z-30 pointer-events-auto">
+        <button
+          onClick={scrollToNextSection}
+          onMouseEnter={() => sfx.playHover()}
+          className="group flex items-center gap-3 bg-zinc-950/90 border border-zinc-800 hover:border-red-600 px-4 py-2 -skew-x-12 transition-all cursor-pointer shadow-lg backdrop-blur-md"
+        >
+          {/* Animated Bouncing Arrow Icon */}
+          <div className="bg-red-600 text-zinc-950 p-1 rounded-none group-hover:bg-white transition-colors animate-bounce">
+            <ArrowRight size={14} className="rotate-90" />
+          </div>
+
+          <div className="flex flex-col items-start font-mono text-[10px] tracking-widest uppercase">
+            <span className="text-zinc-500 group-hover:text-red-500 transition-colors">
+              QUICK
+            </span>
+            <span className="font-serif font-black text-xs text-white group-hover:text-red-400">
+              SCROLL
+            </span>
+          </div>
         </button>
-      </footer>
+      </div>
 
       <style jsx global>{`
         @keyframes grunge-jitter-a {
@@ -427,6 +463,7 @@ export default function HeroSection() {
           0%, 100% { transform: scale(1) rotate(0deg); }
           50% { transform: scale(1.1) rotate(5deg); }
         }
+
         .hero-breathe { animation: hero-breathe 12s ease-in-out infinite; will-change: transform; }
         .grunge-jitter-a { animation: grunge-jitter-a 1.8s steps(4, jump-end) infinite; }
         .grunge-jitter-b { animation: grunge-jitter-b 1.4s steps(3, jump-end) infinite; }

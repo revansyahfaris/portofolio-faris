@@ -20,15 +20,9 @@ function Star({
 
   return (
     <g
-      transform={`translate(${x}, ${y}) scale(${scale}) rotate(${rotation})`}
+      transform={`translate(${x.toFixed(2)}, ${y.toFixed(2)}) scale(${scale.toFixed(2)}) rotate(${rotation.toFixed(2)})`}
       opacity={opacity}
     >
-      {/* <path d={starPath} fill="#dc2626" transform="scale(2.2)" />
-      <path d={starPath} fill="#09090b" transform="scale(1.75)" />
-      <path d={starPath} fill="#dc2626" transform="scale(1.35)" />
-      <path d={starPath} fill="#09090b" transform="scale(0.95)" />
-      <path d={starPath} fill="#dc2626" transform="scale(0.55)" /> */}
-
       <path d={starPath} fill="#1defcf" transform="scale(2.2)" />
       <path d={starPath} fill="#09090b" transform="scale(1.75)" />
       <path d={starPath} fill="#1defcf" transform="scale(1.35)" />
@@ -38,9 +32,10 @@ function Star({
   );
 }
 
+// 📍 PRNG Deterministik berbasis LCG (Bebas Mismatch)
 function seededRandom(seed: number) {
-  const x = Math.sin(seed++) * 10000;
-  return x - Math.floor(x);
+  const x = Math.sin(seed) * 10000;
+  return Math.abs(x - Math.floor(x));
 }
 
 export default function PersonaStarsBackground({
@@ -54,7 +49,7 @@ export default function PersonaStarsBackground({
     const generatedStars = [];
     let seed = 42;
 
-    const viewW = 1200; // sedikit lebih lebar dari viewBox biar nutup tepi
+    const viewW = 1200;
     const viewH = 700;
     const cellW = viewW / cols;
     const cellH = viewH / rows;
@@ -62,29 +57,31 @@ export default function PersonaStarsBackground({
     let id = 0;
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
-        // Posisi dasar di tengah sel grid
         const baseX = col * cellW + cellW / 2 - 100;
         const baseY = row * cellH + cellH / 2 - 50;
 
-        // Jitter (offset acak kecil) supaya nggak kaku kayak grid sempurna
-        // Range jitter dibatasi ~40% dari ukuran sel biar tetap nggak overlap parah antar sel
-        const jitterX = (seededRandom(seed++) - 0.5) * cellW * 0.7;
-        const jitterY = (seededRandom(seed++) - 0.5) * cellH * 0.7;
+        seed += 1;
+        const jitterX = (seededRandom(seed) - 0.5) * cellW * 0.7;
+        seed += 1;
+        const jitterY = (seededRandom(seed) - 0.5) * cellH * 0.7;
 
-        const x = baseX + jitterX;
-        const y = baseY + jitterY;
+        // Bulatkan desimal ke 2 digit untuk mencegah perbedaan micro-precision float
+        const x = Number((baseX + jitterX).toFixed(2));
+        const y = Number((baseY + jitterY).toFixed(2));
 
-        // Distribusi ukuran tetap variatif seperti sebelumnya
-        const scaleRand = seededRandom(seed++);
+        seed += 1;
+        const scaleRand = seededRandom(seed);
         let scale = 0.25 + scaleRand * 0.5;
 
         if (scaleRand > 0.88) {
-          scale = 1.1 + seededRandom(seed++) * 0.7;
+          seed += 1;
+          scale = 1.1 + seededRandom(seed) * 0.7;
         }
 
-        const rotation = seededRandom(seed++) * 360 - 180;
+        seed += 1;
+        const rotation = Number((seededRandom(seed) * 360 - 180).toFixed(2));
 
-        generatedStars.push({ id: id++, x, y, scale, rotation, opacity: 1 });
+        generatedStars.push({ id: id++, x, y, scale: Number(scale.toFixed(2)), rotation, opacity: 1 });
       }
     }
 
