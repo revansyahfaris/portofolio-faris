@@ -2,7 +2,10 @@ import { memo } from 'react';
 
 export const FlameBackground = memo(function FlameBackground() {
   return (
-    <div className="absolute -top-[25px] -right-[700px] w-[85vw] sm:w-[65vw] md:w-[120vw] h-full z-20 pointer-events-none select-none overflow-visible rotate-[36deg]">
+    <div
+      className="absolute -top-[25px] -right-[700px] w-[85vw] sm:w-[65vw] md:w-[120vw] h-full z-20 pointer-events-none select-none overflow-visible rotate-[36deg]"
+      style={{contain: 'layout style'}}
+    >
       <div className="absolute inset-0 z-0 overflow-visible">
         {/* LAYER 2: CRIMSON RED FLAME */}
         <div

@@ -17,8 +17,6 @@ interface MenuItem {
   readonly label: string;
   readonly targetId: string;
   readonly textSize: string;
-  /** Style objek sudah dihitung sekali di module-scope agar tidak
-   *  dibuat ulang setiap render (lihat item optimasi #2 & #10). */
   readonly wrapperStyle: CSSProperties;
 }
 
@@ -32,9 +30,8 @@ interface GrungeLayerConfig {
 }
 
 /* ============================================================
-   CONSTANTS (module scope -> dibuat sekali, bukan setiap render)
+   CONSTANTS (module scope -> dibuat sekali)
    ============================================================ */
-
 const MENU_ITEMS: readonly MenuItem[] = [
   { id: 'profile', label: 'PROFILE', targetId: 'profile', textSize: 'text-3xl md:text-5xl', wrapperStyle: { transform: 'rotate(24deg) skewX(16deg) translate3d(110px, -90px, 0)' } },
   { id: 'skills', label: 'SKILLS', targetId: 'skills', textSize: 'text-3xl md:text-5xl', wrapperStyle: { transform: 'rotate(18deg) skewX(12deg) translate3d(65px, -50px, 0)' } },
@@ -47,8 +44,6 @@ const MENU_ITEMS: readonly MenuItem[] = [
   { id: 'connect', label: 'CONNECT', targetId: 'contact', textSize: 'text-3xl md:text-5xl', wrapperStyle: { transform: 'rotate(-24deg) skewX(-16deg) translate3d(110px, 90px, 0)' } },
 ];
 
-// 5 lapisan grunge flame -> sebelumnya 5 blok JSX duplikat, sekarang 1 sumber data + 1 map().
-// Nilai clipPath/className identik 1:1 dengan versi asli.
 const GRUNGE_LAYERS: readonly GrungeLayerConfig[] = [
   {
     className: 'absolute inset-y-[-85%] right-[-10%] w-[180%] bg-zinc-950 grunge-jitter-a',
@@ -77,7 +72,6 @@ const GRUNGE_LAYERS: readonly GrungeLayerConfig[] = [
   },
 ];
 
-// Style statis yang sebelumnya dibuat ulang (object literal baru) setiap render.
 const ROOT_CLASSNAME =
   'relative min-h-[100dvh] h-[100dvh] w-full bg-zinc-950 text-white overflow-hidden font-sans select-none flex flex-col justify-between p-4 sm:p-6 md:p-10 transition-filter duration-150';
 
@@ -100,7 +94,6 @@ const INNER_WRAPPER_STYLE_UNSELECTED: CSSProperties = {
 };
 
 const LABEL_CLIP_STYLE: CSSProperties = { clipPath: 'polygon(0 0, 95% 15%, 100% 85%, 0 100%)' };
-
 const ARTWORK_ASPECT_STYLE: CSSProperties = { aspectRatio: '16 / 9' };
 
 const ARTWORK_IMAGE_STYLE: CSSProperties = {
@@ -115,15 +108,12 @@ const INDEX_DISPLAY_STYLE: CSSProperties = {
 };
 
 const MENU_PERSPECTIVE_STYLE: CSSProperties = { perspective: '1000px', perspectiveOrigin: '0% 50%' };
-
 const TAGLINE_BAR_STYLE: CSSProperties = { clipPath: 'polygon(2% 0, 100% 20%, 100% 100%, 0 80%)' };
-
 const TAGLINE_TEXT_STYLE: CSSProperties = { textShadow: '1px 1px 2px rgba(0,0,0,0.5)', rotate: '1.05deg' };
-
 const BIO_BOX_STYLE: CSSProperties = { clipPath: 'polygon(4% 0, 100% 0, 100% 100%, 0 100%)' };
 
 /* ============================================================
-   MENU ITEM ROW (tampilan 100% identik dengan versi asli)
+   MENU ITEM ROW
    ============================================================ */
 interface MenuItemRowProps {
   readonly item: MenuItem;
@@ -203,12 +193,8 @@ const MenuItemRow = memo(function MenuItemRow({
 });
 
 /* ============================================================
-   SUB-KOMPONEN HASIL PEMISAHAN (item optimasi #14)
-   Masing-masing di-memo dengan props seminimal mungkin supaya
-   perubahan state yang tidak relevan (mis. hover menu) tidak
-   memicu render ulang bagian-bagian statis ini.
+   SUB-KOMPONEN ISOLASI
    ============================================================ */
-
 const HeroStarsBackground = memo(function HeroStarsBackground() {
   return (
     <div className="absolute inset-0 z-0 pointer-events-none">
@@ -332,7 +318,6 @@ interface HeroBottomHudProps {
 const HeroBottomHud = memo(function HeroBottomHud({ onOpenModal }: HeroBottomHudProps) {
   return (
     <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 right-4 sm:right-6 md:right-10 z-30 flex flex-col items-end gap-2 max-w-md md:max-w-xl pointer-events-none">
-      {/* BAR MERAH DEKORATIF */}
       <div className="relative w-full flex justify-end px-4">
         <div
           className="w-[90%] sm:w-[75%] md:w-[70%] -mr-4 h-8 md:h-9 bg-red-600/90 -rotate-2 shadow-[0_0_25px_rgba(220,38,38,0.5)] flex items-center justify-end px-8 z-0"
@@ -347,7 +332,6 @@ const HeroBottomHud = memo(function HeroBottomHud({ onOpenModal }: HeroBottomHud
         </div>
       </div>
 
-      {/* BIO BOX */}
       <div
         className="bg-zinc-900/95 border-r-4 border-red-600 p-2.5 md:p-3.5 shadow-2xl -rotate-1 text-right pointer-events-auto backdrop-blur-md"
         style={BIO_BOX_STYLE}
@@ -357,7 +341,6 @@ const HeroBottomHud = memo(function HeroBottomHud({ onOpenModal }: HeroBottomHud
         </p>
       </div>
 
-      {/* INITIATE QUEST ACTION BUTTON */}
       <div className="flex items-center gap-2 sm:gap-3 mt-1 pointer-events-auto">
         <button
           onClick={onOpenModal}
@@ -403,10 +386,10 @@ export default function HeroSection() {
   const [sfxEnabled, setSfxEnabled] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [effectsReady, setEffectsReady] = useState(false);
-  // glitchActive dihapus dari state -> lihat rootRef + glitchTimeoutRef di bawah.
 
   const rootRef = useRef<HTMLDivElement>(null);
-  const isLockRef = useRef(false); // dipakai oleh wheel-lock (nonaktif, lihat komentar di bawah)
+  const isLockRef = useRef(false);
+  const isInViewportRef = useRef(true); // 📍 Ref penanda apakah Hero Section sedang dilihat
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const glitchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectedIndexRef = useRef(selectedIndex);
@@ -425,38 +408,67 @@ export default function HeroSection() {
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // SEQUENTIAL SCROLL LOCK FOR HERO MENU
+  // 📍 1. OBSERVER VIEWPORT BOUNDARY CHECK
+  // Mencegah scroll wheel dibajak saat user sudah di section lain!
+  useEffect(() => {
+    const rootEl = rootRef.current;
+    if (!rootEl) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Hero hanya aktif menangkap scroll jika minimal 50% permukaannya tampak
+        isInViewportRef.current = entry.isIntersecting && entry.intersectionRatio >= 0.5;
+      },
+      { threshold: [0.1, 0.5, 0.9] }
+    );
+
+    observer.observe(rootEl);
+    return () => observer.disconnect();
+  }, []);
+
+  // 📍 2. SEQUENTIAL SCROLL LOCK UNTUK HERO MENU (FIXED)
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      if (window.scrollY < 80) {
-        if (isLockRef.current) {
-          e.preventDefault();
-          return;
-        }
-        const current = selectedIndexRef.current;
-        if (e.deltaY > 0 && current < MENU_ITEMS.length - 1) {
-          e.preventDefault();
-          isLockRef.current = true;
-          sfx.playHover();
-          setSelectedIndex(current + 1);
-          setTimeout(() => { isLockRef.current = false; }, 60);
-        } else if (e.deltaY < 0 && current > 0) {
-          e.preventDefault();
-          isLockRef.current = true;
-          sfx.playHover();
-          setSelectedIndex(current - 1);
-          setTimeout(() => { isLockRef.current = false; }, 60);
-        }
+      // JIKA HERO TIDAK TERLIHAT DI SCREEN, BYPASS HANDLER INI TOTAL!
+      if (!isInViewportRef.current) return;
+
+      const current = selectedIndexRef.current;
+
+      // Scroll Down & Menu Belum di Index Terakhir
+      if (e.deltaY > 0 && current < MENU_ITEMS.length - 1) {
+        e.preventDefault();
+        if (isLockRef.current) return;
+
+        isLockRef.current = true;
+        sfx.playHover();
+        setSelectedIndex(current + 1);
+
+        setTimeout(() => {
+          isLockRef.current = false;
+        }, 80);
+      } 
+      // Scroll Up & Menu Belum di Index Pertama
+      else if (e.deltaY < 0 && current > 0) {
+        e.preventDefault();
+        if (isLockRef.current) return;
+
+        isLockRef.current = true;
+        sfx.playHover();
+        setSelectedIndex(current - 1);
+
+        setTimeout(() => {
+          isLockRef.current = false;
+        }, 80);
       }
+      // Jika e.deltaY > 0 dan current === MENU_ITEMS.length - 1 (Menu sudah paling bawah):
+      // Jangan dipanggil e.preventDefault(), biarkan browser men-scroll secara alami ke #profile!
     };
+
     window.addEventListener('wheel', handleWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleWheel);
   }, []);
 
   // Keyboard Event: Tekan 'M' untuk Glitch
-  // Sebelumnya: setGlitchActive(true/false) -> re-render seluruh HeroSection 2x.
-  // Sekarang: memanipulasi classList langsung lewat ref -> 0 re-render React,
-  // hasil visual (kelas "invert contrast-200" selama 800ms) identik.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === 'm' && !isModalOpenRef.current) {
@@ -474,9 +486,8 @@ export default function HeroSection() {
       window.removeEventListener('keydown', handleKeyDown);
       if (glitchTimeoutRef.current) clearTimeout(glitchTimeoutRef.current);
     };
-  }, []); // dependency isModalOpen diganti ref -> listener tidak perlu dipasang ulang tiap modal buka/tutup
+  }, []);
 
-  // Cleanup hover-debounce timeout saat unmount (celah di versi asli).
   useEffect(() => {
     return () => {
       if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);

@@ -10,7 +10,7 @@ export const BackgroundWatermark = memo(function BackgroundWatermark() {
           backgroundSize: '20px 20px',
         }}
       />
-      <span className="absolute -left-10 -bottom-6 font-serif font-black text-[25vw] text-white/20 leading-none select-none -rotate-12 pointer-events-none">
+      <span className="absolute -left-16 -bottom-6 font-serif font-black text-[25vw] text-white/15 leading-none select-none -rotate-12 pointer-events-none">
         01
       </span>
     </div>

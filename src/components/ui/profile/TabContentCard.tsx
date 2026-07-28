@@ -10,7 +10,7 @@ import type { TabType } from './types';
 
 const TAB_CONTENT_STYLE: CSSProperties = {
   transform:
-    'perspective(400px) rotateY(28deg) rotateX(0deg) rotateZ(8deg) translateZ(-40px) translateX(215px) translateY(80px) scale(0.9)',
+    'perspective(400px) rotateY(28deg) rotateX(0deg) rotateZ(8deg) translateZ(-40px) translateX(250px) translateY(80px) scale(0.9)',
 };
 
 const StatusTabContent = memo(function StatusTabContent() {

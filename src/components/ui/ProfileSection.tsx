@@ -46,8 +46,7 @@ export default function ProfileSection() {
     });
   }, []);
 
-  // Auto fetch GitHub commit counter — dengan AbortController agar tidak
-  // menyebabkan memory leak / setState setelah komponen unmount.
+  // Auto fetch GitHub commit counter — AbortController & Memory Leak Safe
   useEffect(() => {
     const controller = new AbortController();
 
@@ -71,7 +70,6 @@ export default function ProfileSection() {
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') {
-          // Komponen sudah unmount sebelum request selesai — abaikan.
           return;
         }
         console.error('Failed to fetch GitHub commits:', err);
@@ -92,6 +90,7 @@ export default function ProfileSection() {
     <section
       id="profile"
       className="relative min-h-[100dvh] h-[100dvh] w-full bg-zinc-950 text-white overflow-hidden font-sans select-none flex flex-col justify-between p-4 sm:p-6 md:p-10 border-t-2 border-emerald-500/40"
+      style={{contentVisibility: 'auto'}}
     >
       {/* 1A. Background flame base */}
       <FlameBackground />
@@ -130,8 +129,26 @@ export default function ProfileSection() {
       {/* 5. Footer prompt */}
       <SectionFooter />
 
-      {/* Keyframe animations */}
+      {/* Keyframe animations & GPU Optimizations */}
       <style jsx global>{`
+        /* 📍 OPTIMASI 1: Isolasi Layer GPU Compositor & Backface Hiding */
+        .animate-fly-in-name,
+        .animate-fly-in-degree,
+        .animate-fly-in-capabilities,
+        .grunge-jitter-a,
+        .grunge-jitter-b,
+        .grunge-jitter-c {
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+          transform-style: preserve-3d;
+        }
+
+        .animate-fly-in-name,
+        .animate-fly-in-degree,
+        .animate-fly-in-capabilities {
+          will-change: transform, opacity;
+        }
+
         @keyframes grunge-jitter-a {
           0%, 100% { transform: translate3d(0, 0, 0) scaleY(1); }
           25%  { transform: translate3d(-2px, 3px, 0) scaleY(0.94); }
@@ -183,12 +200,31 @@ export default function ProfileSection() {
           animation-delay: 0.45s;
         }
 
+        /* 📍 OPTIMASI 2: Hentikan alokasi memori will-change setelah animasi masuk selesai */
+        .animate-fly-in-name,
+        .animate-fly-in-degree,
+        .animate-fly-in-capabilities {
+          animation-fill-mode: forwards;
+        }
+
+        /* 📍 OPTIMASI 3: Mobile Thermal & Battery Saver */
+        @media (max-width: 640px) {
+          .grunge-jitter-a,
+          .grunge-jitter-b,
+          .grunge-jitter-c {
+            animation-duration: 3s; /* Memperlambat interval re-step agar GPU mobile bisa lebih rileks */
+          }
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .animate-fly-in-name,
           .animate-fly-in-degree,
-          .animate-fly-in-capabilities {
-            animation: none;
-            opacity: 1;
+          .animate-fly-in-capabilities,
+          .grunge-jitter-a,
+          .grunge-jitter-b,
+          .grunge-jitter-c {
+            animation: none !important;
+            will-change: auto;
           }
         }
       `}</style>

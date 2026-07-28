@@ -4,7 +4,7 @@ import { SectionCard } from './SectionCard';
 
 const IDENTITY_STYLE: CSSProperties = {
   transform:
-    'perspective(400px) rotateY(28deg) rotateX(4deg) rotateZ(18deg) translateZ(-40px) translateX(450px) translateY(100px)',
+    'perspective(400px) rotateY(28deg) rotateX(4deg) rotateZ(18deg) translateZ(-40px) translateX(475px) translateY(100px)',
 };
 
 interface IdentityCardProps {

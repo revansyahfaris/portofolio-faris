@@ -8,7 +8,7 @@ import { CURRENT_GPA, MAX_GPA, GPA_PERCENTAGE, FALLBACK_COMMIT_COUNT } from './c
 
 const METRICS_STYLE: CSSProperties = {
   transform:
-    'perspective(400px) rotateY(28deg) rotateX(4deg) rotateZ(-20deg) translateZ(-40px) translateX(400px) translateY(-15px) scale(1)',
+    'perspective(400px) rotateY(28deg) rotateX(4deg) rotateZ(-20deg) translateZ(-40px) translateX(395px) translateY(-15px) scale(1)',
 };
 
 interface MetricsCardProps {
