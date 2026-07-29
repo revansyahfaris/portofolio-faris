@@ -23,28 +23,21 @@
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
   }
-  .lazy-render {
-    content-visibility: auto;
-    contain-intrinsic-size: 100vw 100vh; /* Ukuran estimasi tinggi section */
-  }
-  .section-contain {
-    contain: layout paint style;
-    content-visibility: auto;
-    contain-intrinsic-size: 100vw 100vh;
-  }
+  
+  /* Terapkan utility class ini HANYA pada section di luar viewport (bukan Hero) */
+  .lazy-render,
   .lazy-section {
     content-visibility: auto;
     contain-intrinsic-size: 100vw 100vh;
     contain: layout paint style;
   }
-  .style-boundary {
-    contain: style layout paint;
-    content-visibility: auto;
-    contain-intrinsic-size: 100vw 100vh;
+  
+  .contain-strict-flame {
+    contain: strict;
+    backface-visibility: hidden;
   }
 }
 
-/* src/app/globals.css */
 html, body {
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
@@ -69,39 +62,44 @@ html, body {
   background: #ef4444; /* red-500 */
 }
 
-/* Atlus Kinetic Entrance Animations */
+/* Atlus Kinetic Entrance Animations - Pure GPU Transforms */
 @keyframes kineticSlideIn {
   0% {
     opacity: 0;
-    transform: translateX(-40px) rotate(-6deg) skewX(-6deg);
+    transform: translate3d(-40px, 0, 0) rotate(-6deg) skewX(-6deg);
   }
   100% {
     opacity: 1;
-    transform: translateX(0) rotate(-3deg) skewX(0deg);
+    transform: translate3d(0, 0, 0) rotate(-3deg) skewX(0deg);
   }
 }
 
-@keyframes pulseGlow {
+/* Optimasi Pulse Glow: Menggunakan Opacity Alih-alih Box-Shadow */
+@keyframes pulseGlowOptimized {
   0%, 100% {
-    box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+    opacity: 0.4;
+    transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 25px rgba(220, 38, 38, 0.8);
+    opacity: 0.9;
+    transform: scale(1.02);
   }
 }
 
 .animate-kinetic-entry {
   animation: kineticSlideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }
 
 .animate-pulse-glow {
-  animation: pulseGlow 2s infinite;
+  animation: pulseGlowOptimized 2s infinite ease-in-out;
+  will-change: opacity, transform;
 }
 
-/* Kinetic Scroll Animations */
+/* Kinetic Scroll Animations - Pure GPU Transforms */
 .atlus-scroll-hidden {
   opacity: 0;
-  transform: translateY(40px) rotate(-4deg) skewX(-4deg);
+  transform: translate3d(0, 40px, 0) rotate(-4deg) skewX(-4deg);
   transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
               transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
@@ -109,13 +107,5 @@ html, body {
 
 .atlus-scroll-visible {
   opacity: 1;
-  transform: translateY(0) rotate(-1deg) skewX(0deg);
-}
-
-/* Content Visibility untuk Offloading GPU */
-@supports (content-visibility: auto) {
-  section {
-    content-visibility: auto;
-    contain-intrinsic-size: 100vh;
-  }
+  transform: translate3d(0, 0, 0) rotate(-1deg) skewX(0deg);
 }

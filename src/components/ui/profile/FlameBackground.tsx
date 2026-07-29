@@ -4,15 +4,16 @@ export const FlameBackground = memo(function FlameBackground() {
   return (
     <div
       className="absolute -top-[25px] -right-[700px] w-[85vw] sm:w-[65vw] md:w-[120vw] h-full z-20 pointer-events-none select-none overflow-visible rotate-[36deg]"
-      style={{contain: 'layout style'}}
+      style={{ contain: 'layout style' }} // Gunakan 'strict' agar isolasi total dari DOM utama
     >
-      <div className="absolute inset-0 z-0 overflow-visible">
+      <div className="absolute inset-0 z-0 overflow-visible transform-gpu">
         {/* LAYER 2: CRIMSON RED FLAME */}
         <div
-          className="absolute inset-y-[-38%] left-[-16%] w-[170%] bg-red-600 grunge-jitter-a shadow-[0_0_35px_rgba(220,38,38,0.9)] transform-gpu will-change-transform"
+          className="absolute inset-y-[-38%] left-[-16%] w-[170%] bg-red-600 grunge-jitter-a transform-gpu will-change-transform"
           style={{
             clipPath:
               'polygon(20% 100%, 35% 70%, 15% 55%, 40% 40%, 25% 20%, 55% 30%, 50% 0%, 75% 25%, 65% 45%, 90% 50%, 70% 65%, 85% 85%, 55% 75%, 45% 100%)',
+            filter: 'drop-shadow(0px 0px 20px rgba(220,38,38,0.8))' // Menggantikan box-shadow pada clipPath
           }}
         />
 
@@ -22,8 +23,6 @@ export const FlameBackground = memo(function FlameBackground() {
           style={{
             clipPath:
               'polygon(30% 100%, 40% 75%, 20% 60%, 45% 45%, 35% 25%, 60% 35%, 55% 5%, 80% 30%, 68% 50%, 92% 55%, 72% 68%, 88% 88%, 60% 78%, 50% 100%)',
-            backgroundImage: 'radial-gradient(rgba(0, 0, 0, 0.25) 15%, transparent 16%)',
-            backgroundSize: '6px 6px',
           }}
         />
 

@@ -206,7 +206,7 @@ const HeroArtwork = memo(function HeroArtwork() {
       <div className="absolute top-0 right-0 w-[80vw] sm:w-[60vw] lg:w-[45vw]" style={ARTWORK_ASPECT_STYLE}>
         <div className="w-full h-full hero-breathe">
           <Image
-            src="/assets/hero/hero-bg-dekstop.png"
+            src="https://res.cloudinary.com/iyerv9sc/image/upload/f_auto,q_auto/hero-bg-dekstop_dhiy7s"
             alt="Hero Artwork"
             fill
             priority={true}
