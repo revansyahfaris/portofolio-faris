@@ -1,60 +1,50 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useRef, memo } from 'react';
 
-function Star({
-  x,
-  y,
-  scale = 1,
-  rotation = 0,
-  opacity = 1,
-}: {
-  x: number;
-  y: number;
-  scale?: number;
-  rotation?: number;
-  opacity?: number;
-}) {
-  const starPath =
-    'M 0 -50 L 14.6 -15.4 L 47.5 -15.4 L 20.9 3.8 L 30.9 38.1 L 0 19 L -30.9 38.1 L -20.9 3.8 L -47.5 -15.4 L -14.6 -15.4 Z';
+const STAR_PATH_STR =
+  'M 0 -50 L 14.6 -15.4 L 47.5 -15.4 L 20.9 3.8 L 30.9 38.1 L 0 19 L -30.9 38.1 L -20.9 3.8 L -47.5 -15.4 L -14.6 -15.4 Z';
 
-  return (
-    <g
-      transform={`translate(${x.toFixed(2)}, ${y.toFixed(2)}) scale(${scale.toFixed(2)}) rotate(${rotation.toFixed(2)})`}
-      opacity={opacity}
-    >
-      <path d={starPath} fill="#1defcf" transform="scale(2.2)" />
-      <path d={starPath} fill="#09090b" transform="scale(1.75)" />
-      <path d={starPath} fill="#1defcf" transform="scale(1.35)" />
-      <path d={starPath} fill="#09090b" transform="scale(0.95)" />
-      <path d={starPath} fill="#1defcf" transform="scale(0.55)" />
-    </g>
-  );
-}
-
-// 📍 PRNG Deterministik berbasis LCG (Bebas Mismatch)
 function seededRandom(seed: number) {
   const x = Math.sin(seed) * 10000;
   return Math.abs(x - Math.floor(x));
 }
 
-export default function PersonaStarsBackground({
-  cols = 23,
-  rows = 15,
+export default memo(function StarsBackground({
+  cols = 26,
+  rows = 14,
 }: {
-  cols?: number;
-  rows?: number;
+  readonly cols?: number;
+  readonly rows?: number;
 }) {
-  const stars = useMemo(() => {
-    const generatedStars = [];
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
+
+    let isVisible = true;
+
+    // 📍 Support High-DPI / Retina Display agar bintang tajam
+    const dpr = window.devicePixelRatio || 1;
+    const displayWidth = canvas.parentElement?.clientWidth || 1200;
+    const displayHeight = canvas.parentElement?.clientHeight || 700;
+
+    canvas.width = displayWidth * dpr;
+    canvas.height = displayHeight * dpr;
+
+    ctx.scale(dpr, dpr);
+
+    const path2D = new Path2D(STAR_PATH_STR);
+    const stars: Array<{ x: number; y: number; scale: number; rotation: number }> = [];
     let seed = 42;
 
-    const viewW = 1200;
-    const viewH = 700;
-    const cellW = viewW / cols;
-    const cellH = viewH / rows;
+    const cellW = displayWidth / cols;
+    const cellH = displayHeight / rows;
 
-    let id = 0;
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         const baseX = col * cellW + cellW / 2 - 100;
@@ -65,9 +55,8 @@ export default function PersonaStarsBackground({
         seed += 1;
         const jitterY = (seededRandom(seed) - 0.5) * cellH * 0.7;
 
-        // Bulatkan desimal ke 2 digit untuk mencegah perbedaan micro-precision float
-        const x = Number((baseX + jitterX).toFixed(2));
-        const y = Number((baseY + jitterY).toFixed(2));
+        const x = baseX + jitterX;
+        const y = baseY + jitterY;
 
         seed += 1;
         const scaleRand = seededRandom(seed);
@@ -79,36 +68,88 @@ export default function PersonaStarsBackground({
         }
 
         seed += 1;
-        const rotation = Number((seededRandom(seed) * 360 - 180).toFixed(2));
+        const rotation = (seededRandom(seed) * 360 - 180) * (Math.PI / 180);
 
-        generatedStars.push({ id: id++, x, y, scale: Number(scale.toFixed(2)), rotation, opacity: 1 });
+        stars.push({ x, y, scale, rotation });
       }
     }
 
-    return generatedStars.sort((a, b) => a.scale - b.scale);
+    stars.sort((a, b) => a.scale - b.scale);
+
+    const draw = () => {
+      if (!isVisible) return;
+
+      ctx.clearRect(0, 0, displayWidth, displayHeight);
+
+      for (let i = 0; i < stars.length; i++) {
+        const { x, y, scale, rotation } = stars[i];
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+
+        // Layer 1: Teal Outer
+        ctx.save();
+        ctx.scale(scale * 2.2, scale * 2.2);
+        ctx.fillStyle = '#1defcf';
+        ctx.fill(path2D);
+        ctx.restore();
+
+        // Layer 2: Dark
+        ctx.save();
+        ctx.scale(scale * 1.75, scale * 1.75);
+        ctx.fillStyle = '#09090b';
+        ctx.fill(path2D);
+        ctx.restore();
+
+        // Layer 3: Teal Mid
+        ctx.save();
+        ctx.scale(scale * 1.35, scale * 1.35);
+        ctx.fillStyle = '#1defcf';
+        ctx.fill(path2D);
+        ctx.restore();
+
+        // Layer 4: Dark Inner
+        ctx.save();
+        ctx.scale(scale * 0.95, scale * 0.95);
+        ctx.fillStyle = '#09090b';
+        ctx.fill(path2D);
+        ctx.restore();
+
+        // Layer 5: Teal Center
+        ctx.save();
+        ctx.scale(scale * 0.55, scale * 0.55);
+        ctx.fillStyle = '#1defcf';
+        ctx.fill(path2D);
+        ctx.restore();
+
+        ctx.restore();
+      }
+    };
+
+    draw();
+
+    const handleVisibility = () => {
+      isVisible = !document.hidden;
+      if (isVisible) draw();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [cols, rows]);
 
   return (
-    <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none bg-zinc-950">
-      <svg
-        className="w-full h-full object-cover opacity-75"
-        viewBox="0 0 1000 600"
-        preserveAspectRatio="xMidYMid slice"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <g>
-          {stars.map((star) => (
-            <Star
-              key={star.id}
-              x={star.x}
-              y={star.y}
-              scale={star.scale}
-              rotation={star.rotation}
-              opacity={star.opacity}
-            />
-          ))}
-        </g>
-      </svg>
+    <div
+      className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none bg-zinc-950"
+      style={{ contain: 'strict' }}
+    >
+      <canvas
+        ref={canvasRef}
+        className="w-full h-full object-cover opacity-75 transform-gpu"
+      />
     </div>
   );
-}
+});

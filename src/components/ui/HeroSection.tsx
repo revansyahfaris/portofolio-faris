@@ -75,8 +75,6 @@ const GRUNGE_LAYERS: readonly GrungeLayerConfig[] = [
 const ROOT_CLASSNAME =
   'relative min-h-[100dvh] h-[100dvh] w-full bg-zinc-950 text-white overflow-hidden font-sans select-none flex flex-col justify-between p-4 sm:p-6 md:p-10 transition-filter duration-150';
 
-const PERSPECTIVE_WRAPPER_STYLE: CSSProperties = { perspective: '350px', perspectiveOrigin: '0% 50%' };
-
 const INNER_WRAPPER_STYLE_SELECTED: CSSProperties = {
   transform: 'rotateY(10deg) scale(1.3)',
   transformOrigin: 'right center',
@@ -113,7 +111,7 @@ const TAGLINE_TEXT_STYLE: CSSProperties = { textShadow: '1px 1px 2px rgba(0,0,0,
 const BIO_BOX_STYLE: CSSProperties = { clipPath: 'polygon(4% 0, 100% 0, 100% 100%, 0 100%)' };
 
 /* ============================================================
-   MENU ITEM ROW
+   FLATTENED MENU ITEM ROW
    ============================================================ */
 interface MenuItemRowProps {
   readonly item: MenuItem;
@@ -139,54 +137,50 @@ const MenuItemRow = memo(function MenuItemRow({
       className={`group relative flex justify-end cursor-pointer transition-all duration-200 origin-left ${
         isSelected ? 'z-0' : 'z-20'
       }`}
-      style={item.wrapperStyle}
+      style={{
+        ...item.wrapperStyle,
+        perspective: '350px',
+        perspectiveOrigin: '0% 50%',
+      }}
     >
-      <div className="relative inline-block" style={PERSPECTIVE_WRAPPER_STYLE}>
+      <div
+        className="relative inline-block"
+        style={isSelected ? INNER_WRAPPER_STYLE_SELECTED : INNER_WRAPPER_STYLE_UNSELECTED}
+      >
+        {/* GRUNGE FLAME */}
         <div
-          className="relative inline-block"
-          style={isSelected ? INNER_WRAPPER_STYLE_SELECTED : INNER_WRAPPER_STYLE_UNSELECTED}
+          className="absolute inset-0 -z-10 overflow-visible pointer-events-none select-none transition-opacity duration-150"
+          style={{
+            opacity: isSelected && effectsReady ? 1 : 0,
+            visibility: isSelected ? 'visible' : 'hidden',
+          }}
         >
-          {/* GRUNGE FLAME */}
-          <div
-            className="absolute inset-0 -z-10 overflow-visible pointer-events-none select-none transition-opacity duration-150"
-            style={{
-              opacity: isSelected && effectsReady ? 1 : 0,
-              visibility: isSelected ? 'visible' : 'hidden',
-            }}
-          >
-            {GRUNGE_LAYERS.map((layer, layerIndex) => (
-              <div
-                key={layerIndex}
-                className={layer.className}
-                style={{
-                  clipPath: layer.clipPath,
-                  opacity: layer.opacity,
-                  backgroundImage: layer.backgroundImage,
-                  backgroundSize: layer.backgroundSize,
-                  mixBlendMode: layer.mixBlendMode,
-                  animationPlayState: isSelected ? 'running' : 'paused',
-                }}
-              />
-            ))}
-          </div>
-
-          <div
-            className={`relative inline-block text-right px-4 py-0.5 transition-colors duration-150 ${
-              isSelected
-                ? 'bg-red-600 text-zinc-950 shadow-[0_0_35px_rgba(220,38,38,0.9)] z-30'
-                : 'bg-transparent text-white group-hover:bg-red-600 group-hover:text-zinc-950'
-            }`}
-            style={LABEL_CLIP_STYLE}
-          >
-            <h1
-              className={`font-serif font-black ${item.textSize} text-right tracking-tighter uppercase leading-none ${
-                isSelected ? 'text-zinc-950' : 'text-white group-hover:text-zinc-950'
-              }`}
-            >
-              {item.label}
-            </h1>
-          </div>
+          {GRUNGE_LAYERS.map((layer, layerIndex) => (
+            <div
+              key={layerIndex}
+              className={layer.className}
+              style={{
+                clipPath: layer.clipPath,
+                opacity: layer.opacity,
+                backgroundImage: layer.backgroundImage,
+                backgroundSize: layer.backgroundSize,
+                mixBlendMode: layer.mixBlendMode,
+                animationPlayState: isSelected ? 'running' : 'paused',
+              }}
+            />
+          ))}
         </div>
+
+        <h1
+          className={`font-serif font-black ${item.textSize} text-right tracking-tighter uppercase leading-none px-4 py-0.5 transition-colors duration-150 ${
+            isSelected
+              ? 'bg-red-600 text-zinc-950 shadow-[0_0_35px_rgba(220,38,38,0.9)] z-30'
+              : 'bg-transparent text-white group-hover:bg-red-600 group-hover:text-zinc-950'
+          }`}
+          style={LABEL_CLIP_STYLE}
+        >
+          {item.label}
+        </h1>
       </div>
     </div>
   );
@@ -215,10 +209,15 @@ const HeroArtwork = memo(function HeroArtwork() {
             src="/assets/hero/hero-bg-dekstop.png"
             alt="Hero Artwork"
             fill
-            priority
+            priority={true}
+            fetchPriority="high"
+            loading="eager"
             sizes="(max-width: 640px) 80vw, (max-width: 1024px) 60vw, 45vw"
-            className="object-cover"
-            style={ARTWORK_IMAGE_STYLE}
+            className="object-cover transform-gpu"
+            style={{
+              ...ARTWORK_IMAGE_STYLE,
+              contain: 'paint',
+            }}
           />
         </div>
       </div>
@@ -378,9 +377,6 @@ const QuickScrollButton = memo(function QuickScrollButton({ onClick }: QuickScro
   );
 });
 
-/* ============================================================
-   HERO SECTION (root)
-   ============================================================ */
 export default function HeroSection() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sfxEnabled, setSfxEnabled] = useState(true);
@@ -389,7 +385,7 @@ export default function HeroSection() {
 
   const rootRef = useRef<HTMLDivElement>(null);
   const isLockRef = useRef(false);
-  const isInViewportRef = useRef(true); // 📍 Ref penanda apakah Hero Section sedang dilihat
+  const isInViewportRef = useRef(true);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const glitchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectedIndexRef = useRef(selectedIndex);
@@ -408,15 +404,13 @@ export default function HeroSection() {
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // 📍 1. OBSERVER VIEWPORT BOUNDARY CHECK
-  // Mencegah scroll wheel dibajak saat user sudah di section lain!
+  // OBSERVER VIEWPORT BOUNDARY CHECK
   useEffect(() => {
     const rootEl = rootRef.current;
     if (!rootEl) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Hero hanya aktif menangkap scroll jika minimal 50% permukaannya tampak
         isInViewportRef.current = entry.isIntersecting && entry.intersectionRatio >= 0.5;
       },
       { threshold: [0.1, 0.5, 0.9] }
@@ -426,15 +420,13 @@ export default function HeroSection() {
     return () => observer.disconnect();
   }, []);
 
-  // 📍 2. SEQUENTIAL SCROLL LOCK UNTUK HERO MENU (FIXED)
+  // SEQUENTIAL SCROLL LOCK
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      // JIKA HERO TIDAK TERLIHAT DI SCREEN, BYPASS HANDLER INI TOTAL!
       if (!isInViewportRef.current) return;
 
       const current = selectedIndexRef.current;
 
-      // Scroll Down & Menu Belum di Index Terakhir
       if (e.deltaY > 0 && current < MENU_ITEMS.length - 1) {
         e.preventDefault();
         if (isLockRef.current) return;
@@ -446,9 +438,7 @@ export default function HeroSection() {
         setTimeout(() => {
           isLockRef.current = false;
         }, 80);
-      } 
-      // Scroll Up & Menu Belum di Index Pertama
-      else if (e.deltaY < 0 && current > 0) {
+      } else if (e.deltaY < 0 && current > 0) {
         e.preventDefault();
         if (isLockRef.current) return;
 
@@ -460,15 +450,12 @@ export default function HeroSection() {
           isLockRef.current = false;
         }, 80);
       }
-      // Jika e.deltaY > 0 dan current === MENU_ITEMS.length - 1 (Menu sudah paling bawah):
-      // Jangan dipanggil e.preventDefault(), biarkan browser men-scroll secara alami ke #profile!
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleWheel);
   }, []);
 
-  // Keyboard Event: Tekan 'M' untuk Glitch
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === 'm' && !isModalOpenRef.current) {
@@ -520,14 +507,16 @@ export default function HeroSection() {
     setIsModalOpen(false);
   }, []);
 
+  // Optimasi handler hover/select menu dengan requestAnimationFrame
   const handleMenuSelect = useCallback((targetId: string, index: number) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    hoverTimeoutRef.current = setTimeout(() => {
+    
+    requestAnimationFrame(() => {
       setSelectedIndex((prev) => {
         if (prev !== index) sfx.playHover();
         return index;
       });
-    }, 30);
+    });
   }, []);
 
   const handleMenuClick = useCallback((targetId: string, index: number) => {
@@ -543,31 +532,17 @@ export default function HeroSection() {
   return (
     <div ref={rootRef} className={ROOT_CLASSNAME}>
       <QuestModal isOpen={isModalOpen} onClose={handleCloseModal} />
-
-      {/* BACKGROUND STARS */}
       <HeroStarsBackground />
-
-      {/* BACKGROUND CHARACTER ARTWORK */}
       <HeroArtwork />
-
-      {/* ANGKA URUTAN BESAR */}
       <HeroIndexDisplay selectedIndex={selectedIndex} />
-
-      {/* 1. TOP HUD / NAVBAR */}
       <HeroTopHud sfxEnabled={sfxEnabled} onToggleSfx={toggleSfx} onOpenModal={handleOpenModal} />
-
-      {/* 2. MAIN MENU */}
       <HeroMenu
         selectedIndex={selectedIndex}
         effectsReady={effectsReady}
         onMenuClick={handleMenuClick}
         onMenuHover={handleMenuSelect}
       />
-
-      {/* 3. METAPHOR-STYLE FLOATING RIGHT BOTTOM HUD */}
       <HeroBottomHud onOpenModal={handleOpenModal} />
-
-      {/* QUICK SCROLL HUD */}
       <QuickScrollButton onClick={scrollToNextSection} />
 
       <style jsx global>{`
