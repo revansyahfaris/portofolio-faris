@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { portofolioConfig } from '../../config/portofolioConfig';
-import { sfx } from '../../lib/sfx';
 import {
   FlameBackground,
   Banner3D,
@@ -19,19 +18,20 @@ import {
 import { TABS, DEFAULT_GITHUB_USERNAME, FALLBACK_COMMIT_COUNT } from './profile/constants';
 import type { TabType } from './profile/types';
 import type { GithubCommitSearchResponse } from './profile/types';
+import { useViewportPresence } from '@/hooks/useViewportPresence';
 
 export default function ProfileSection() {
   const [activeTab, setActiveTab] = useState<TabType>('status');
   const [commitCount, setCommitCount] = useState<number | null>(null);
   const [loadingCommits, setLoadingCommits] = useState<boolean>(true);
 
+  const sectionRef = useViewportPresence<HTMLElement>();
+
   const handleSelectTab = useCallback((tab: TabType) => {
-    sfx.playSelect();
     setActiveTab(tab);
   }, []);
 
   const handlePrevTab = useCallback(() => {
-    sfx.playSelect();
     setActiveTab((prev) => {
       const currentIndex = TABS.indexOf(prev);
       return TABS[(currentIndex - 1 + TABS.length) % TABS.length];
@@ -39,7 +39,6 @@ export default function ProfileSection() {
   }, []);
 
   const handleNextTab = useCallback(() => {
-    sfx.playSelect();
     setActiveTab((prev) => {
       const currentIndex = TABS.indexOf(prev);
       return TABS[(currentIndex + 1) % TABS.length];
@@ -88,9 +87,13 @@ export default function ProfileSection() {
 
   return (
     <section
+      ref={sectionRef}
       id="profile"
       className="relative min-h-[100dvh] h-[100dvh] w-full bg-zinc-950 text-white overflow-hidden font-sans select-none flex flex-col justify-between p-4 sm:p-6 md:p-10 border-t-2 border-emerald-500/40"
-      style={{contentVisibility: 'auto'}}
+      style={{ 
+        contentVisibility: 'auto',
+        containIntrinsicSize: '100vh',
+      }}
     >
       {/* 1A. Background flame base */}
       <FlameBackground />
@@ -131,7 +134,7 @@ export default function ProfileSection() {
 
       {/* Keyframe animations & GPU Optimizations */}
       <style jsx global>{`
-        /* 📍 OPTIMASI 1: Isolasi Layer GPU Compositor & Backface Hiding */
+        /* 📍 OPTIMASI 1: Eliminasi Layer Promotion Lock (Menurunkan Commit Phase Lag) */
         .animate-fly-in-name,
         .animate-fly-in-degree,
         .animate-fly-in-capabilities,
@@ -143,12 +146,23 @@ export default function ProfileSection() {
           transform-style: preserve-3d;
         }
 
+        /* di style jsx global ProfileSection */
+        .fx-paused .grunge-jitter-a,
+        .fx-paused .grunge-jitter-b,
+        .fx-paused .grunge-jitter-c {
+          animation-play-state: paused;
+          will-change: auto !important;
+        }
+          
+        /* melepaskan memory layer GPU setelah animasi fly-in selesai */
         .animate-fly-in-name,
         .animate-fly-in-degree,
         .animate-fly-in-capabilities {
-          will-change: transform, opacity;
+          will-change: auto;
+          animation-fill-mode: forwards;
         }
 
+        /* 📍 OPTIMASI 2: Compositor-Only Jitter Keyframes (3D Hardware Accelerated) */
         @keyframes grunge-jitter-a {
           0%, 100% { transform: translate3d(0, 0, 0) scaleY(1); }
           25%  { transform: translate3d(-2px, 3px, 0) scaleY(0.94); }
@@ -170,7 +184,7 @@ export default function ProfileSection() {
         .grunge-jitter-b { animation: grunge-jitter-b 1.4s steps(3, jump-end) infinite; }
         .grunge-jitter-c { animation: grunge-jitter-c 1.1s steps(3, jump-end) infinite; }
 
-        /* 📍 "THROWN BOX" ENTRANCE — animasi kartu terlempar maju dari arah kanan belakang */
+        /* 📍 "THROWN BOX" ENTRANCE ANIMATIONS */
         @keyframes fly-in-name {
           0%   { opacity: 0; transform: translate3d(300px, -200px, -200px) rotateY(-50deg) rotateZ(35deg) scale(0.5); }
           55%  { opacity: 1; }
@@ -200,19 +214,12 @@ export default function ProfileSection() {
           animation-delay: 0.45s;
         }
 
-        /* 📍 OPTIMASI 2: Hentikan alokasi memori will-change setelah animasi masuk selesai */
-        .animate-fly-in-name,
-        .animate-fly-in-degree,
-        .animate-fly-in-capabilities {
-          animation-fill-mode: forwards;
-        }
-
-        /* 📍 OPTIMASI 3: Mobile Thermal & Battery Saver */
+        /* 📍 OPTIMASI 3: Mobile Battery & GPU Saver */
         @media (max-width: 640px) {
           .grunge-jitter-a,
           .grunge-jitter-b,
           .grunge-jitter-c {
-            animation-duration: 3s; /* Memperlambat interval re-step agar GPU mobile bisa lebih rileks */
+            animation-duration: 3s;
           }
         }
 
