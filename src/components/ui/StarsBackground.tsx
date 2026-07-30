@@ -11,7 +11,7 @@ function seededRandom(seed: number) {
 }
 
 export default memo(function StarsBackground({
-  cols = 26,
+  cols = 34,
   rows = 14,
 }: {
   readonly cols?: number;
@@ -26,58 +26,64 @@ export default memo(function StarsBackground({
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
-    let isVisible = true;
-
-    // 📍 Support High-DPI / Retina Display agar bintang tajam
-    const dpr = window.devicePixelRatio || 1;
-    const displayWidth = canvas.parentElement?.clientWidth || 1200;
-    const displayHeight = canvas.parentElement?.clientHeight || 700;
-
-    canvas.width = displayWidth * dpr;
-    canvas.height = displayHeight * dpr;
-
-    ctx.scale(dpr, dpr);
-
     const path2D = new Path2D(STAR_PATH_STR);
-    const stars: Array<{ x: number; y: number; scale: number; rotation: number }> = [];
-    let seed = 42;
 
-    const cellW = displayWidth / cols;
-    const cellH = displayHeight / rows;
+    // Fungsi Render Canvas Bintang
+    const renderStars = () => {
+      if (!canvas || !canvas.parentElement) return;
 
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        const baseX = col * cellW + cellW / 2 - 100;
-        const baseY = row * cellH + cellH / 2 - 50;
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+      const displayWidth = canvas.parentElement.clientWidth || window.innerWidth;
+      const displayHeight = canvas.parentElement.clientHeight || window.innerHeight;
 
-        seed += 1;
-        const jitterX = (seededRandom(seed) - 0.5) * cellW * 0.7;
-        seed += 1;
-        const jitterY = (seededRandom(seed) - 0.5) * cellH * 0.7;
+      canvas.width = displayWidth * dpr;
+      canvas.height = displayHeight * dpr;
 
-        const x = baseX + jitterX;
-        const y = baseY + jitterY;
+      ctx.save();
+      ctx.scale(dpr, dpr);
 
-        seed += 1;
-        const scaleRand = seededRandom(seed);
-        let scale = 0.25 + scaleRand * 0.5;
+      const stars: Array<{
+        x: number;
+        y: number;
+        scale: number;
+        rotation: number;
+      }> = [];
+      let seed = 42;
 
-        if (scaleRand > 0.88) {
+      const cellW = displayWidth / cols;
+      const cellH = displayHeight / rows;
+
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const baseX = col * cellW + cellW / 2;
+          const baseY = row * cellH + cellH / 2;
+
           seed += 1;
-          scale = 1.1 + seededRandom(seed) * 0.7;
+          const jitterX = (seededRandom(seed) - 0.5) * cellW * 1.25;
+          seed += 1;
+          const jitterY = (seededRandom(seed) - 0.5) * cellH * 1.25;
+
+          const x = baseX + jitterX;
+          const y = baseY + jitterY;
+
+          seed += 1;
+          const scaleRand = seededRandom(seed);
+
+          let scale = 0.35 + scaleRand * 0.45;
+
+          if (scaleRand > 0.85) {
+            seed += 1;
+            scale = 1.0 + seededRandom(seed) * 0.6;
+          }
+
+          seed += 1;
+          const rotation = (seededRandom(seed) * 360 - 180) * (Math.PI / 180);
+
+          stars.push({ x, y, scale, rotation });
         }
-
-        seed += 1;
-        const rotation = (seededRandom(seed) * 360 - 180) * (Math.PI / 180);
-
-        stars.push({ x, y, scale, rotation });
       }
-    }
 
-    stars.sort((a, b) => a.scale - b.scale);
-
-    const draw = () => {
-      if (!isVisible) return;
+      stars.sort((a, b) => a.scale - b.scale);
 
       ctx.clearRect(0, 0, displayWidth, displayHeight);
 
@@ -88,56 +94,106 @@ export default memo(function StarsBackground({
         ctx.translate(x, y);
         ctx.rotate(rotation);
 
-        // Layer 1: Teal Outer
         ctx.save();
         ctx.scale(scale * 2.2, scale * 2.2);
-        ctx.fillStyle = '#1defcf';
+        ctx.fillStyle = '#138d7b';
         ctx.fill(path2D);
         ctx.restore();
 
-        // Layer 2: Dark
         ctx.save();
         ctx.scale(scale * 1.75, scale * 1.75);
         ctx.fillStyle = '#09090b';
         ctx.fill(path2D);
         ctx.restore();
 
-        // Layer 3: Teal Mid
         ctx.save();
         ctx.scale(scale * 1.35, scale * 1.35);
-        ctx.fillStyle = '#1defcf';
+        ctx.fillStyle = '#138d7b';
         ctx.fill(path2D);
         ctx.restore();
 
-        // Layer 4: Dark Inner
         ctx.save();
         ctx.scale(scale * 0.95, scale * 0.95);
         ctx.fillStyle = '#09090b';
         ctx.fill(path2D);
         ctx.restore();
 
-        // Layer 5: Teal Center
         ctx.save();
         ctx.scale(scale * 0.55, scale * 0.55);
-        ctx.fillStyle = '#1defcf';
+        ctx.fillStyle = '#138d7b';
         ctx.fill(path2D);
         ctx.restore();
 
         ctx.restore();
       }
+
+      const shadowWidth = displayWidth * 0.55;
+      const gradient = ctx.createLinearGradient(0, 0, shadowWidth, 0);
+      gradient.addColorStop(0, '#09090b');
+      gradient.addColorStop(0.5, 'rgba(9, 9, 11, 0.55)');
+      gradient.addColorStop(1, 'rgba(9, 9, 11, 0)');
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, shadowWidth, displayHeight);
+
+      ctx.restore();
     };
 
-    draw();
+    // 📍 STRATEGI PENUNDAAN PERMUKAAN DENGAN PERFORMANCE OBSERVER
+    let hasRendered = false;
+
+    const triggerRenderOnce = () => {
+      if (hasRendered) return;
+      hasRendered = true;
+      renderStars();
+    };
+
+    // PerformanceObserver untuk mendeteksi kapan LCP selesai dicat ke layar
+    let po: PerformanceObserver | null = null;
+
+    try {
+      if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
+        po = new PerformanceObserver((entryList) => {
+          if (entryList.getEntries().length > 0) {
+            triggerRenderOnce();
+            po?.disconnect();
+          }
+        });
+
+        // observe entry LCP dengan buffered: true agar tidak kelewatan jika LCP sudah terjadi
+        po.observe({
+          type: 'largest-contentful-paint',
+          buffered: true,
+        } as PerformanceObserverInit);
+      } else {
+        // Fallback untuk browser yang tidak mendukung PerformanceObserver
+        setTimeout(triggerRenderOnce, 800);
+      }
+    } catch {
+      // Fallback jika 'type: largest-contentful-paint' ditolak oleh browser tertentu
+      setTimeout(triggerRenderOnce, 800);
+    }
+
+    // Safety timeout: memastikan bintang tetap dirender jika entri LCP gagal ter-trigger
+    const safetyTimeout = setTimeout(triggerRenderOnce, 2000);
 
     const handleVisibility = () => {
-      isVisible = !document.hidden;
-      if (isVisible) draw();
+      if (!document.hidden) triggerRenderOnce();
+    };
+
+    const handleResize = () => {
+      // Resize hanya memicu re-render jika canvas sudah pernah dirender sekali
+      if (hasRendered) renderStars();
     };
 
     document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('resize', handleResize);
 
     return () => {
+      if (po) po.disconnect();
+      clearTimeout(safetyTimeout);
       document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('resize', handleResize);
     };
   }, [cols, rows]);
 
@@ -146,10 +202,7 @@ export default memo(function StarsBackground({
       className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none bg-zinc-950"
       style={{ contain: 'strict' }}
     >
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full object-cover opacity-75 transform-gpu"
-      />
+      <canvas ref={canvasRef} className="w-full h-full object-cover" />
     </div>
   );
 });

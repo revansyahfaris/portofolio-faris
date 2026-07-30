@@ -4,7 +4,7 @@
   html, body {
     height: 100%;
     width: 100%;
-    overflow: hidden; /* 📍 Hilangkan scrollbar bawaan browser sepenuhnya */
+    overflow-x: hidden; /* 📍 Hilangkan scrollbar bawaan browser sepenuhnya */
     background-color: var(--color-zinc-950, #09090b);
     color: var(--color-zinc-100, #f4f4f5);
     font-family: inherit;

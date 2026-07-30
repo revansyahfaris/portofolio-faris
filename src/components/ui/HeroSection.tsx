@@ -2,15 +2,21 @@
 
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import type { CSSProperties } from 'react';
-import { Volume2, VolumeX, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { portofolioConfig } from '../../config/portofolioConfig';
-import { sfx } from '../../lib/sfx';
 import QuestModal from './QuestModal';
 import Image from 'next/image';
 import StarsBackground from './StarsBackground';
+import type Lenis from 'lenis';
+
+declare global {
+  interface Window {
+    __lenis?: Lenis;
+  }
+}
 
 /* ============================================================
-   TYPES
+   TYPES & CONSTANTS
    ============================================================ */
 interface MenuItem {
   readonly id: string;
@@ -29,9 +35,6 @@ interface GrungeLayerConfig {
   readonly mixBlendMode?: CSSProperties['mixBlendMode'];
 }
 
-/* ============================================================
-   CONSTANTS (module scope -> dibuat sekali)
-   ============================================================ */
 const MENU_ITEMS: readonly MenuItem[] = [
   { id: 'profile', label: 'PROFILE', targetId: 'profile', textSize: 'text-3xl md:text-5xl', wrapperStyle: { transform: 'rotate(24deg) skewX(16deg) translate3d(110px, -90px, 0)' } },
   { id: 'skills', label: 'SKILLS', targetId: 'skills', textSize: 'text-3xl md:text-5xl', wrapperStyle: { transform: 'rotate(18deg) skewX(12deg) translate3d(65px, -50px, 0)' } },
@@ -73,7 +76,7 @@ const GRUNGE_LAYERS: readonly GrungeLayerConfig[] = [
 ];
 
 const ROOT_CLASSNAME =
-  'relative min-h-[100dvh] h-[100dvh] w-full bg-zinc-950 text-white overflow-hidden font-sans select-none flex flex-col justify-between p-4 sm:p-6 md:p-10 transition-filter duration-150';
+  'relative min-h-[100dvh] h-[100dvh] w-full bg-transparent text-white overflow-hidden font-sans select-none flex flex-col justify-between p-4 sm:p-6 md:p-10 isolate';
 
 const INNER_WRAPPER_STYLE_SELECTED: CSSProperties = {
   transform: 'rotateY(10deg) scale(1.3)',
@@ -92,13 +95,7 @@ const INNER_WRAPPER_STYLE_UNSELECTED: CSSProperties = {
 };
 
 const LABEL_CLIP_STYLE: CSSProperties = { clipPath: 'polygon(0 0, 95% 15%, 100% 85%, 0 100%)' };
-const ARTWORK_ASPECT_STYLE: CSSProperties = { aspectRatio: '16 / 9' };
-
-const ARTWORK_IMAGE_STYLE: CSSProperties = {
-  objectPosition: 'top 30% right 25%',
-  transform: 'scale(3.2) translateX(15%) translateY(0%)',
-  transformOrigin: 'top right',
-};
+const ARTWORK_SHADOW_STYLE: CSSProperties = { aspectRatio: '16 / 9' };
 
 const INDEX_DISPLAY_STYLE: CSSProperties = {
   fontSize: 'clamp(32px, 16vw, 240px)',
@@ -147,7 +144,6 @@ const MenuItemRow = memo(function MenuItemRow({
         className="relative inline-block"
         style={isSelected ? INNER_WRAPPER_STYLE_SELECTED : INNER_WRAPPER_STYLE_UNSELECTED}
       >
-        {/* GRUNGE FLAME */}
         <div
           className="absolute inset-0 -z-10 overflow-visible pointer-events-none select-none transition-opacity duration-150"
           style={{
@@ -186,42 +182,49 @@ const MenuItemRow = memo(function MenuItemRow({
   );
 });
 
-/* ============================================================
-   SUB-KOMPONEN ISOLASI
-   ============================================================ */
-const HeroStarsBackground = memo(function HeroStarsBackground() {
-  return (
-    <div className="absolute inset-0 z-0 pointer-events-none">
-      <div className="w-full h-full scale-115 relative hero-breathe">
-        <StarsBackground />
-      </div>
-      <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/80 via-transparent to-zinc-950/90 z-0" />
-    </div>
-  );
-});
+const ARTWORK_IMAGE_STYLE: CSSProperties = {
+  objectPosition: 'right 25% top 30%',
+  transform: 'scale(1.9) translateX(10%) translateY(0%)',
+  transformOrigin: 'right top',
+};
 
 const HeroArtwork = memo(function HeroArtwork() {
   return (
-    <div className="absolute inset-0 z-[5] overflow-hidden pointer-events-none">
-      <div className="absolute top-0 right-0 w-[80vw] sm:w-[60vw] lg:w-[45vw]" style={ARTWORK_ASPECT_STYLE}>
-        <div className="w-full h-full hero-breathe">
-          <Image
-            src="https://res.cloudinary.com/iyerv9sc/image/upload/f_auto,q_auto/hero-bg-dekstop_dhiy7s"
-            alt="Hero Artwork"
-            fill
-            priority={true}
-            fetchPriority="high"
-            loading="eager"
-            sizes="(max-width: 640px) 80vw, (max-width: 1024px) 60vw, 45vw"
-            className="object-cover transform-gpu"
-            style={{
-              ...ARTWORK_IMAGE_STYLE,
-              contain: 'paint',
-            }}
-          />
+    <div 
+      className="absolute inset-0 z-[5] overflow-hidden pointer-events-none" 
+      style={{ isolation: 'isolate' }}
+    >
+      {/* 📍 1. KONTAINER UTAMA: Diperlebar (misal dari 45vw ke 65vw) agar ruang fade/masking lebih luas */}
+      <div 
+        className="absolute top-0 right-0 w-[95vw] sm:w-[80vw] lg:w-[70vw]" 
+        style={ARTWORK_SHADOW_STYLE}
+      >
+        <div 
+          className="w-full h-full hero-breathe relative"
+          style={{
+            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 25%), linear-gradient(to top, transparent 0%, black 15%)',
+            WebkitMaskComposite: 'destination-in',
+            maskImage: 'linear-gradient(to right, transparent 0%, black 25%)',
+            maskComposite: 'intersect',
+          }}
+        >
+          {/* 📍 2. WRAPPER GAMBAR: Dikunci di ukuran asal (45vw) & di-anchor ke pojok kanan atas.
+              Gambarnya TIDAK akan ikut membesar sama sekali! */}
+          <div className="absolute top-0 right-0 w-[80vw] sm:w-[60vw] lg:w-[45vw] h-full">
+            <Image
+              src="https://res.cloudinary.com/iyerv9sc/image/upload/f_auto,q_auto/hero-bg-dekstop_dhiy7s"
+              alt="Hero Artwork"
+              fill
+              priority={true}
+              fetchPriority="high"
+              loading="eager"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 1200px"
+              className="object-cover"
+              style={ARTWORK_IMAGE_STYLE}
+            />
+          </div>
         </div>
       </div>
-      <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/55 to-transparent z-10" />
     </div>
   );
 });
@@ -232,7 +235,10 @@ interface HeroIndexDisplayProps {
 
 const HeroIndexDisplay = memo(function HeroIndexDisplay({ selectedIndex }: HeroIndexDisplayProps) {
   return (
-    <div className="pointer-events-none select-none absolute -rotate-90 top-32 right-2 md:right-8 z-0 w-[7vw] max-w-[420px] text-right">
+    <div
+      className="pointer-events-none select-none absolute -rotate-90 top-32 right-2 md:right-8 z-0 w-[7vw] max-w-[420px] text-right"
+      style={{ isolation: 'isolate' }}
+    >
       <span
         key={selectedIndex}
         className="block font-serif font-black text-white leading-none opacity-90"
@@ -246,31 +252,15 @@ const HeroIndexDisplay = memo(function HeroIndexDisplay({ selectedIndex }: HeroI
 });
 
 interface HeroTopHudProps {
-  readonly sfxEnabled: boolean;
-  readonly onToggleSfx: () => void;
   readonly onOpenModal: () => void;
 }
 
-const HeroTopHud = memo(function HeroTopHud({ sfxEnabled, onToggleSfx, onOpenModal }: HeroTopHudProps) {
+const HeroTopHud = memo(function HeroTopHud({ onOpenModal }: HeroTopHudProps) {
   return (
     <header className="relative z-30 flex items-center justify-between shrink-0">
       <div className="flex items-center gap-3 text-xs font-mono">
         <button
-          onClick={onToggleSfx}
-          onMouseEnter={() => sfx.playHover()}
-          className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700 px-3 py-1.5 -skew-x-12 hover:border-red-500 text-zinc-300 transition cursor-pointer"
-        >
-          {sfxEnabled ? (
-            <Volume2 size={14} className="text-emerald-400" />
-          ) : (
-            <VolumeX size={14} className="text-red-500" />
-          )}
-          <span>SFX: {sfxEnabled ? 'ON' : 'OFF'}</span>
-        </button>
-
-        <button
           onClick={onOpenModal}
-          onMouseEnter={() => sfx.playHover()}
           className="bg-white text-zinc-950 font-black px-4 py-1.5 -rotate-2 hover:bg-red-600 hover:text-white transition uppercase tracking-wider text-xs shadow-lg cursor-pointer"
         >
           DISPATCH QUEST
@@ -343,7 +333,6 @@ const HeroBottomHud = memo(function HeroBottomHud({ onOpenModal }: HeroBottomHud
       <div className="flex items-center gap-2 sm:gap-3 mt-1 pointer-events-auto">
         <button
           onClick={onOpenModal}
-          onMouseEnter={() => sfx.playHover()}
           className="group flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white font-serif font-black px-4 sm:px-6 py-2 -rotate-2 shadow-[3px_3px_0px_rgba(255,255,255,0.9)] transition uppercase tracking-wider text-xs md:text-sm cursor-pointer whitespace-nowrap"
         >
           INITIATE <ArrowRight size={16} />
@@ -362,7 +351,6 @@ const QuickScrollButton = memo(function QuickScrollButton({ onClick }: QuickScro
     <div className="absolute bottom-6 left-6 sm:left-10 z-30 pointer-events-auto">
       <button
         onClick={onClick}
-        onMouseEnter={() => sfx.playHover()}
         className="group flex items-center gap-3 bg-zinc-950/90 border border-zinc-800 hover:border-red-600 px-4 py-2 -skew-x-12 transition-all cursor-pointer shadow-lg backdrop-blur-md"
       >
         <div className="bg-red-600 text-zinc-950 p-1 rounded-none group-hover:bg-white transition-colors animate-bounce">
@@ -379,12 +367,10 @@ const QuickScrollButton = memo(function QuickScrollButton({ onClick }: QuickScro
 
 export default function HeroSection() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [sfxEnabled, setSfxEnabled] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [effectsReady, setEffectsReady] = useState(false);
 
   const rootRef = useRef<HTMLDivElement>(null);
-  const isLockRef = useRef(false);
   const isInViewportRef = useRef(true);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const glitchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -420,46 +406,67 @@ export default function HeroSection() {
     return () => observer.disconnect();
   }, []);
 
-  // SEQUENTIAL SCROLL LOCK
+  // KONTROL SCROLL MENU PERSONA
   useEffect(() => {
+    let lastStepTime = 0;
+
     const handleWheel = (e: WheelEvent) => {
-      if (!isInViewportRef.current) return;
+      const lenis = window.__lenis;
+      const isAtTop = window.scrollY <= 5;
+
+      if (!isAtTop) return;
 
       const current = selectedIndexRef.current;
+      const maxIndex = MENU_ITEMS.length - 1;
+      const isScrollingDown = e.deltaY > 0;
+      const isScrollingUp = e.deltaY < 0;
 
-      if (e.deltaY > 0 && current < MENU_ITEMS.length - 1) {
+      const isNavigatingMenu =
+        (isScrollingDown && current < maxIndex) ||
+        (isScrollingUp && current > 0);
+
+      if (isNavigatingMenu) {
+        if (lenis) lenis.stop();
         e.preventDefault();
-        if (isLockRef.current) return;
 
-        isLockRef.current = true;
-        sfx.playHover();
-        setSelectedIndex(current + 1);
+        if (Math.abs(e.deltaY) < 20) return;
 
-        setTimeout(() => {
-          isLockRef.current = false;
-        }, 80);
-      } else if (e.deltaY < 0 && current > 0) {
-        e.preventDefault();
-        if (isLockRef.current) return;
+        const now = Date.now();
+        if (now - lastStepTime < 100) return;
+        lastStepTime = now;
 
-        isLockRef.current = true;
-        sfx.playHover();
-        setSelectedIndex(current - 1);
+        if (isScrollingDown && current < maxIndex) {
+          setSelectedIndex(current + 1);
+        } else if (isScrollingUp && current > 0) {
+          setSelectedIndex(current - 1);
+        }
+        return;
+      }
 
-        setTimeout(() => {
-          isLockRef.current = false;
-        }, 80);
+      if (isScrollingDown && current === maxIndex) {
+        if (lenis) lenis.start();
+      }
+    };
+
+    const handleScrollCheck = () => {
+      const lenis = window.__lenis;
+      if (window.scrollY > 5 && lenis) {
+        lenis.start();
       }
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });
-    return () => window.removeEventListener('wheel', handleWheel);
+    window.addEventListener('scroll', handleScrollCheck, { passive: true });
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('scroll', handleScrollCheck);
+    };
   }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === 'm' && !isModalOpenRef.current) {
-        sfx.playSelect();
         rootRef.current?.classList.add('invert', 'contrast-200');
         if (glitchTimeoutRef.current) clearTimeout(glitchTimeoutRef.current);
         glitchTimeoutRef.current = setTimeout(() => {
@@ -482,24 +489,13 @@ export default function HeroSection() {
   }, []);
 
   const scrollToNextSection = useCallback(() => {
-    sfx.playSelect();
     const nextSection = document.getElementById('profile');
     if (nextSection) {
       nextSection.scrollIntoView({ behavior: 'smooth' });
     }
   }, []);
 
-  const toggleSfx = useCallback(() => {
-    setSfxEnabled((prev) => {
-      const next = !prev;
-      sfx.enabled = next;
-      if (next) sfx.playSelect();
-      return next;
-    });
-  }, []);
-
   const handleOpenModal = useCallback(() => {
-    sfx.playSelect();
     setIsModalOpen(true);
   }, []);
 
@@ -507,21 +503,16 @@ export default function HeroSection() {
     setIsModalOpen(false);
   }, []);
 
-  // Optimasi handler hover/select menu dengan requestAnimationFrame
-  const handleMenuSelect = useCallback((targetId: string, index: number) => {
+  const handleMenuSelect = useCallback((_targetId: string, index: number) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    
+
     requestAnimationFrame(() => {
-      setSelectedIndex((prev) => {
-        if (prev !== index) sfx.playHover();
-        return index;
-      });
+      setSelectedIndex(index);
     });
   }, []);
 
   const handleMenuClick = useCallback((targetId: string, index: number) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    sfx.playSelect();
     setSelectedIndex(index);
     const element = document.getElementById(targetId);
     if (element) {
@@ -531,11 +522,11 @@ export default function HeroSection() {
 
   return (
     <div ref={rootRef} className={ROOT_CLASSNAME}>
+      <StarsBackground />
       <QuestModal isOpen={isModalOpen} onClose={handleCloseModal} />
-      <HeroStarsBackground />
       <HeroArtwork />
       <HeroIndexDisplay selectedIndex={selectedIndex} />
-      <HeroTopHud sfxEnabled={sfxEnabled} onToggleSfx={toggleSfx} onOpenModal={handleOpenModal} />
+      <HeroTopHud onOpenModal={handleOpenModal} />
       <HeroMenu
         selectedIndex={selectedIndex}
         effectsReady={effectsReady}
@@ -570,7 +561,7 @@ export default function HeroSection() {
           50% { transform: scale(1.1) rotate(5deg); }
         }
 
-        .hero-breathe { animation: hero-breathe 12s ease-in-out infinite; will-change: transform; }
+        .hero-breathe { animation: hero-breathe 12s ease-in-out infinite; }
         .grunge-jitter-a { animation: grunge-jitter-a 1.8s steps(4, jump-end) infinite; }
         .grunge-jitter-b { animation: grunge-jitter-b 1.4s steps(3, jump-end) infinite; }
         .grunge-jitter-c { animation: grunge-jitter-c 1.1s steps(3, jump-end) infinite; }
