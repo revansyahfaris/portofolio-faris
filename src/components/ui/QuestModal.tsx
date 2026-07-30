@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { X, Send, CheckCircle2 } from 'lucide-react';
-import { sfx } from '@/lib/sfx';
 
 interface QuestModalProps {
   isOpen: boolean;
@@ -17,7 +16,6 @@ export default function QuestModal({ isOpen, onClose }: QuestModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sfx.playSelect();
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
@@ -33,8 +31,8 @@ export default function QuestModal({ isOpen, onClose }: QuestModalProps) {
       >
         {/* CLOSE BUTTON */}
         <button 
-          onClick={() => { sfx.playSelect(); onClose(); }}
-          className="absolute top-4 right-4 bg-red-600 hover:bg-white hover:text-zinc-950 text-white p-1 -skew-x-12 transition"
+          onClick={onClose}
+          className="absolute top-4 right-4 bg-red-600 hover:bg-white hover:text-zinc-950 text-white p-1 -skew-x-12 transition cursor-pointer"
         >
           <X size={18} />
         </button>
@@ -101,7 +99,7 @@ export default function QuestModal({ isOpen, onClose }: QuestModalProps) {
 
             <button 
               type="submit"
-              className="w-full bg-red-600 hover:bg-white hover:text-zinc-950 text-white font-serif font-black text-sm py-3 uppercase tracking-widest transition duration-150 -skew-x-12 flex items-center justify-center gap-2 shadow-lg"
+              className="w-full bg-red-600 hover:bg-white hover:text-zinc-950 text-white font-serif font-black text-sm py-3 uppercase tracking-widest transition duration-150 -skew-x-12 flex items-center justify-center gap-2 shadow-lg cursor-pointer"
             >
               <span>SEND DISPATCH DIRECTIVE</span>
               <Send size={16} />
