@@ -9,7 +9,6 @@ export const CharacterPhoto = memo(function CharacterPhoto() {
           src="https://res.cloudinary.com/iyerv9sc/image/upload/f_auto,q_auto/v1785295087/Untitled_design_-_2026-07-27T103842.226_dflj9u.png"
           alt="Profile Photo - Muhammad Faris Revansyah"
           fill
-          priority
           sizes="(max-width: 640px) 65vw, (max-width: 1024px) 50vw, 70vw"
           className="object-contain object-bottom filter contrast-125 saturate-80"
         />
