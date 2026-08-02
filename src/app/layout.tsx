@@ -14,6 +14,13 @@ export const metadata: Metadata = {
   description: 'An Engineer with Art in Mind',
 };
 
+/**
+ * RootLayout
+ *
+ * Layout dasar Next.js App Router. Preconnect diarahkan ke Cloudinary karena
+ * gambar hero (elemen Largest Contentful Paint halaman ini) dimuat dari domain
+ * tersebut — membuka koneksi lebih awal memangkas waktu sebelum gambar mulai diunduh.
+ */
 export default function RootLayout({
   children,
 }: {
