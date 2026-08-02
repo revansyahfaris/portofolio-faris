@@ -36,11 +36,16 @@ html.lenis body {
     height: 100%;
     width: 100%;
     overflow-x: hidden;
-    overflow-y: scroll; /* 📍 PENTING: Memaksa scrollbar vertikal selalu tampil sejak dari Hero */
+    overflow-y: scroll; /* Memaksa scrollbar vertikal selalu tampil sejak dari Hero */
     background-color: var(--color-zinc-950, #09090b);
     color: var(--color-zinc-100, #f4f4f5);
     font-family: inherit;
     scroll-behavior: smooth;
+    /* Snap native CSS (bukan JS) untuk section di luar Hero<->Profile, yang
+       transisinya sudah punya logic snap kustom sendiri lewat Lenis di
+       HeroSection.tsx. "proximity" dipilih (bukan "mandatory") supaya tidak
+       memaksa snap saat konten section lebih tinggi dari viewport. */
+    scroll-snap-type: y proximity;
   }
 
   body {
