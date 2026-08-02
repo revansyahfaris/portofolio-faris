@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <head>
-        <link rel="preconnect" href="https://api.github.com" />
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
       </head>
       <body className="bg-zinc-950 text-white font-sans antialiased selection:bg-red-600 selection:text-white">
         {children}
