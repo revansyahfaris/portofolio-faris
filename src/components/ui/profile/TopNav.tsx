@@ -1,7 +1,7 @@
 'use client';
 
 import type { TabType } from './types';
-import { TABS } from './constants';
+import { TAB_LABELS, TABS } from './constants';
 
 interface TopNavProps {
   readonly activeTab: TabType;
@@ -34,7 +34,7 @@ export const TopNav = ({ activeTab, onSelectTab, onPrev, onNext }: TopNavProps) 
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                 }`}
               >
-                {tab}
+                {TAB_LABELS[tab]}
               </button>
             );
           })}
