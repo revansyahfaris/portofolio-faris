@@ -1,5 +1,6 @@
 import { memo } from 'react';
 
+/** Watermark dekoratif berupa pola titik dan angka "01" raksasa transparan di latar ProfileSection. */
 export const BackgroundWatermark = memo(function BackgroundWatermark() {
   return (
     <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">

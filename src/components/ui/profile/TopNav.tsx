@@ -10,6 +10,7 @@ interface TopNavProps {
   readonly onNext: () => void;
 }
 
+/** Navigasi tab di ProfileSection (bergaya kontrol gamepad: tombol LB/RB dan daftar tab). */
 export const TopNav = ({ activeTab, onSelectTab, onPrev, onNext }: TopNavProps) => {
   return (
     <nav className="relative z-30 flex items-center justify-between shrink-0">

@@ -6,6 +6,7 @@ interface GpaCardProps {
   gpaPercentage: number;
 }
 
+/** Kartu metrik IPK, menampilkan angka dan progress bar visual. */
 export const GpaCard = memo(function GpaCard({ currentGpa, maxGpa, gpaPercentage }: GpaCardProps) {
   return (
     <div className="bg-zinc-950 p-2.5 border-l-4 border-amber-400 border-y border-r border-zinc-800 flex flex-col justify-center shadow-[2px_2px_0px_#000]">

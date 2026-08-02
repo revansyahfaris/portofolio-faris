@@ -1,6 +1,13 @@
 import { memo } from 'react';
 import Image from 'next/image';
 
+/**
+ * Foto karakter/profil di ProfileSection.
+ *
+ * Sengaja tidak diberi prop `priority` pada Image: section ini dimuat lewat
+ * dynamic import dan bukan kandidat Largest Contentful Paint, sehingga preload
+ * di sini hanya akan bersaing dengan gambar hero yang memang menjadi elemen LCP.
+ */
 export const CharacterPhoto = memo(function CharacterPhoto() {
   return (
     <div className="absolute -bottom-16 -right-24 w-[65vw] sm:w-[50vw] md:w-[38vw] lg:w-[70vw] h-[65vh] sm:h-[110vh] z-30 pointer-events-none select-none flex items-end justify-end">

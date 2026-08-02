@@ -1,5 +1,10 @@
 import { memo } from 'react';
 
+/**
+ * Lapisan flare merah paling depan pada efek api ProfileSection, beranimasi jitter
+ * terus-menerus. Dijeda otomatis lewat kelas "fx-paused" saat section di luar
+ * viewport (lihat useViewportPresence pada ProfileSection).
+ */
 export const FlameFlareForeground = memo(function FlameFlareForeground() {
   return (
     <div

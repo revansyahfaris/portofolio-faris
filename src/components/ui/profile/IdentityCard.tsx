@@ -12,6 +12,7 @@ interface IdentityCardProps {
   tagline: string;
 }
 
+/** Kartu identitas utama: menampilkan nama dan tagline pada ProfileSection. */
 export const IdentityCard = memo(function IdentityCard({ name, tagline }: IdentityCardProps) {
   return (
     <SectionCard className="md:pl-4 w-full sm:max-w-[750px]" style={IDENTITY_STYLE}>

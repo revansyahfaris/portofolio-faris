@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import type { Capability } from './types';
 
+/** Badge kecil yang menampilkan satu kemampuan/keahlian beserta ikon dan warnanya. */
 export const CapabilityBadge = memo(function CapabilityBadge({ capability }: { capability: Capability }) {
   const Icon = capability.icon;
   return (

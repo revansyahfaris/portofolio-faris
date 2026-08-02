@@ -58,6 +58,7 @@ const EquipmentTabContent = memo(function EquipmentTabContent() {
   );
 });
 
+/** Kartu yang menampilkan konten sesuai tab aktif: capability, tech stack, atau equipment. */
 export const TabContentCard = memo(function TabContentCard({ activeTab }: { activeTab: TabType }) {
   return (
     <SectionCard className="md:pl-4 w-full sm:max-w-[750px]" style={TAB_CONTENT_STYLE}>

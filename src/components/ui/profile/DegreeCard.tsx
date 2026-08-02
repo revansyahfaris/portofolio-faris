@@ -7,6 +7,7 @@ const DEGREE_STYLE: CSSProperties = {
     'perspective(400px) rotateY(28deg) rotateX(4deg) rotateZ(-6deg) translateZ(-40px) translateX(275px) translateY(20px) scale(0.9)',
 };
 
+/** Kartu yang menampilkan informasi pendidikan (jurusan dan universitas). */
 export const DegreeCard = memo(function DegreeCard() {
   return (
     <SectionCard className="md:pl-4 w-full sm:max-w-[750px]" style={DEGREE_STYLE}>

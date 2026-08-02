@@ -11,6 +11,7 @@ interface MetricCardProps {
   children: ReactNode;
 }
 
+/** Kartu metrik generik (ikon + label + nilai), dipakai ulang oleh MetricsCard untuk commits dan projects. */
 export const MetricCard = memo(function MetricCard({
   icon: Icon,
   iconColorClass,

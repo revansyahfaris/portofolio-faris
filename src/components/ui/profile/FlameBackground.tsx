@@ -1,5 +1,11 @@
 import { memo } from 'react';
 
+/**
+ * Empat lapisan api dasar (SVG polygon) di belakang ProfileSection, masing-masing
+ * beranimasi jitter dengan kecepatan berbeda untuk kesan api yang bergerak alami.
+ * Menggunakan SVG polygon (bukan div dengan clip-path) agar rendering lebih ringan.
+ * Sama seperti FlameFlareForeground, animasi dijeda otomatis saat di luar viewport.
+ */
 export const FlameBackground = memo(function FlameBackground() {
   return (
     <div

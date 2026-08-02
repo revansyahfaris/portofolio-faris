@@ -1,5 +1,6 @@
 import { memo } from 'react';
 
+/** Footer dekoratif berisi petunjuk navigasi gaya gamepad (D-Pad, tombol X). */
 export const SectionFooter = memo(function SectionFooter() {
   return (
     <footer className="relative z-40 flex items-center justify-between pt-3 text-xs font-mono shrink-0">

@@ -1,5 +1,6 @@
 import { memo } from 'react';
 
+/** Dua banner teks bergaya perspektif 3D ("PROFILE" dan "STATUS") di ProfileSection. */
 export const Banner3D = memo(function Banner3D() {
   return (
     <div className="absolute top-[68vh] right-[2vw] sm:right-[5vw] lg:right-[8vw] z-50 pointer-events-none select-none flex flex-col items-end gap-1">

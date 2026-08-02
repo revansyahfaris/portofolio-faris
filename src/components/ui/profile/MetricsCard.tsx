@@ -16,6 +16,11 @@ interface MetricsCardProps {
   loadingCommits: boolean;
 }
 
+/**
+ * Menyusun tiga metrik pada ProfileSection: jumlah commit GitHub (dari props,
+ * menampilkan status "FETCHING..." selama masih dimuat), jumlah proyek (statis),
+ * dan IPK (dihitung sekali dari portofolioConfig lewat konstanta di constants.ts).
+ */
 export const MetricsCard = memo(function MetricsCard({ commitCount, loadingCommits }: MetricsCardProps) {
   return (
     <SectionCard className="md:pl-2 w-full sm:max-w-[700px]" style={METRICS_STYLE}>

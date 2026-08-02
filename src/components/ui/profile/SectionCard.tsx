@@ -7,7 +7,8 @@ const CARD_BASE_STYLE: CSSProperties = {
   transformOrigin: '100% 50%',
   WebkitFontSmoothing: 'antialiased',
   backfaceVisibility: 'hidden',
-  // REMOVED: willChange: 'transform' (Agar VRAM tidak membengkak saat tidak dianimasikan)
+  // will-change: transform sengaja tidak dipasang di sini karena kartu ini tidak
+  // dianimasikan terus-menerus — memasangnya hanya akan mengunci layer GPU tanpa manfaat.
 };
 
 interface SectionCardProps {
@@ -16,6 +17,7 @@ interface SectionCardProps {
   children: ReactNode;
 }
 
+/** Wrapper kartu dasar (border, shadow, dan transform 3D perspektif) yang dipakai oleh semua kartu di ProfileSection. */
 export function SectionCard({ className = '', style, children }: SectionCardProps) {
   return (
     <div className={`${CARD_BASE_CLASSES} ${className}`} style={{ ...CARD_BASE_STYLE, ...style }}>

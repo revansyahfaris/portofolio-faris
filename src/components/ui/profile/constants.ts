@@ -2,6 +2,10 @@ import { Shield, Zap, Sword, Terminal, Cpu, Layers } from 'lucide-react';
 import { portofolioConfig } from '../../../config/portofolioConfig';
 import type { Capability, EquipmentItem, TabType } from './types';
 
+// Data statis yang ditampilkan di ProfileSection. Dipusatkan di sini agar
+// isi konten (capability, tech stack, equipment) mudah diubah tanpa
+// menyentuh logika komponen.
+
 export const MAX_GPA = 4.0;
 export const FALLBACK_COMMIT_COUNT = 1250;
 export const DEFAULT_GITHUB_USERNAME = 'revansyahfaris';
