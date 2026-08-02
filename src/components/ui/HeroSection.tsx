@@ -75,8 +75,9 @@ const GRUNGE_LAYERS: readonly GrungeLayerConfig[] = [
   },
 ];
 
+/* 📍 Class isolasi GPU dan layout containment */
 const ROOT_CLASSNAME =
-  'relative min-h-[100dvh] h-[100dvh] w-full bg-transparent text-white overflow-hidden font-sans select-none flex flex-col justify-between p-4 sm:p-6 md:p-10 isolate';
+  'relative min-h-[100dvh] h-[100dvh] w-full bg-transparent text-white overflow-hidden font-sans select-none flex flex-col justify-between p-4 sm:p-6 md:p-10 contain-layout contain-paint';
 
 const INNER_WRAPPER_STYLE_SELECTED: CSSProperties = {
   transform: 'rotateY(10deg) scale(1.3)',
@@ -145,7 +146,7 @@ const MenuItemRow = memo(function MenuItemRow({
         style={isSelected ? INNER_WRAPPER_STYLE_SELECTED : INNER_WRAPPER_STYLE_UNSELECTED}
       >
         <div
-          className="absolute inset-0 -z-10 overflow-visible pointer-events-none select-none transition-opacity duration-150"
+          className="absolute inset-0 -z-10 overflow-visible pointer-events-none select-none transition-opacity duration-150 isolate"
           style={{
             opacity: isSelected && effectsReady ? 1 : 0,
             visibility: isSelected ? 'visible' : 'hidden',
@@ -184,7 +185,7 @@ const MenuItemRow = memo(function MenuItemRow({
 
 const ARTWORK_IMAGE_STYLE: CSSProperties = {
   objectPosition: 'right 25% top 30%',
-  transform: 'scale(1.9) translateX(10%) translateY(0%)',
+  transform:'scale(1.9) translateX(10%) translateY(0%)',
   transformOrigin: 'right top',
 };
 
@@ -194,7 +195,6 @@ const HeroArtwork = memo(function HeroArtwork() {
       className="absolute inset-0 z-[5] overflow-hidden pointer-events-none" 
       style={{ isolation: 'isolate' }}
     >
-      {/* 📍 1. KONTAINER UTAMA: Diperlebar (misal dari 45vw ke 65vw) agar ruang fade/masking lebih luas */}
       <div 
         className="absolute top-0 right-0 w-[95vw] sm:w-[80vw] lg:w-[70vw]" 
         style={ARTWORK_SHADOW_STYLE}
@@ -208,8 +208,6 @@ const HeroArtwork = memo(function HeroArtwork() {
             maskComposite: 'intersect',
           }}
         >
-          {/* 📍 2. WRAPPER GAMBAR: Dikunci di ukuran asal (45vw) & di-anchor ke pojok kanan atas.
-              Gambarnya TIDAK akan ikut membesar sama sekali! */}
           <div className="absolute top-0 right-0 w-[80vw] sm:w-[60vw] lg:w-[45vw] h-full">
             <Image
               src="https://res.cloudinary.com/iyerv9sc/image/upload/f_auto,q_auto/hero-bg-dekstop_dhiy7s"
@@ -237,7 +235,7 @@ const HeroIndexDisplay = memo(function HeroIndexDisplay({ selectedIndex }: HeroI
   return (
     <div
       className="pointer-events-none select-none absolute -rotate-90 top-32 right-2 md:right-8 z-0 w-[7vw] max-w-[420px] text-right"
-      style={{ isolation: 'isolate' }}
+      // style={{ isolation: 'isolate' }}
     >
       <span
         key={selectedIndex}
@@ -412,7 +410,7 @@ export default function HeroSection() {
 
     const handleWheel = (e: WheelEvent) => {
       const lenis = window.__lenis;
-      const isAtTop = window.scrollY <= 5;
+      const isAtTop = window.scrollY <= 10;
 
       if (!isAtTop) return;
 
@@ -443,8 +441,15 @@ export default function HeroSection() {
         return;
       }
 
+      // 📍 JIKA SUDAH DI MENU TERAKHIR (CONNECT) DAN SCROLL DOWN LAGI:
       if (isScrollingDown && current === maxIndex) {
-        if (lenis) lenis.start();
+        if (lenis) {
+          lenis.start();
+          const profileEl = document.getElementById('profile');
+          if (profileEl) {
+            lenis.scrollTo(profileEl, { duration: 1.2 });
+          }
+        }
       }
     };
 
@@ -461,6 +466,91 @@ export default function HeroSection() {
     return () => {
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('scroll', handleScrollCheck);
+    };
+  }, []);
+
+  // 📍 1. PROTEKSI DRAG SCROLLBAR (Mencegah loncat jika user drag scrollbar sebelum menu selesai)
+  // 🧪 DINONAKTIFKAN SEMENTARA buat tes apakah ini yang bentrok sama animasi scroll Lenis
+  // (window.scrollTo(0,0) mentah kemungkinan nembak di tengah lenis.scrollTo() pas transisi ke profile)
+  // useEffect(() => {
+  //   const handleForceLock = () => {
+  //     if (selectedIndexRef.current < MENU_ITEMS.length - 1 && window.scrollY > 0) {
+  //       window.scrollTo(0, 0);
+  //     }
+  //   };
+
+  //   window.addEventListener('scroll', handleForceLock, { passive: true });
+  //   return () => window.removeEventListener('scroll', handleForceLock);
+  // }, []);
+
+  useEffect(() => {
+    let isSnapping = false;
+    let rafId: number | null = null;
+    let lenisInstance: NonNullable<typeof window.__lenis> | null = null;
+
+    const SNAP_THRESHOLD = 0.5;
+    const FLICK_VELOCITY = 0.4; // px/ms — flick kencang: snap instan, gak usah nunggu scrollend
+
+    const triggerSnap = (goToProfile: boolean) => {
+      if (!lenisInstance) return;
+      const profileEl = document.getElementById('profile');
+      const heroEl = document.getElementById('hero');
+      const target = goToProfile ? profileEl : heroEl;
+      if (!target) return;
+
+      isSnapping = true;
+      lenisInstance.scrollTo(target, {
+        duration: 0.6,
+        lock: true,
+        onComplete: () => {
+          isSnapping = false;
+        },
+      });
+    };
+
+    const isInZone = () => {
+      const currentScrollY = window.scrollY;
+      const heroHeight = window.innerHeight;
+      return currentScrollY > heroHeight * 0.02 && currentScrollY < heroHeight * 0.98;
+    };
+
+    // 🚀 Jalur cepat: flick kencang -> snap instan ikutin arah gerakan.
+    // Nggak nunggu apa-apa, karena niatnya udah jelas dari kecepatannya.
+    const handleLenisScroll = ({ velocity }: { velocity: number }) => {
+      if (isSnapping) return;
+      if (!isInZone()) return;
+      if (Math.abs(velocity) > FLICK_VELOCITY) {
+        triggerSnap(velocity > 0);
+      }
+    };
+
+    // 🎯 Jalur utama: scrollend = browser BENERAN bilang "udah selesai",
+    // termasuk seluruh sisa momentum/inertia. Bukan tebakan lagi.
+    const handleScrollEnd = () => {
+      if (isSnapping) return;
+      if (!isInZone()) return;
+
+      const heroHeight = window.innerHeight;
+      triggerSnap(window.scrollY > heroHeight * SNAP_THRESHOLD);
+    };
+
+    const waitForLenis = () => {
+      const lenis = window.__lenis;
+      if (lenis) {
+        lenisInstance = lenis;
+        lenis.on('scroll', handleLenisScroll);
+        window.addEventListener('scrollend', handleScrollEnd);
+        return;
+      }
+      rafId = requestAnimationFrame(waitForLenis);
+    };
+
+    waitForLenis();
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      window.removeEventListener('scrollend', handleScrollEnd);
+      if (lenisInstance) lenisInstance.off('scroll', handleLenisScroll);
     };
   }, []);
 
@@ -521,7 +611,7 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <div ref={rootRef} className={ROOT_CLASSNAME}>
+    <section id="hero" ref={rootRef} className={ROOT_CLASSNAME}>
       <StarsBackground />
       <QuestModal isOpen={isModalOpen} onClose={handleCloseModal} />
       <HeroArtwork />
@@ -537,35 +627,107 @@ export default function HeroSection() {
       <QuickScrollButton onClick={scrollToNextSection} />
 
       <style jsx global>{`
-        @keyframes grunge-jitter-a {
-          0%   { transform: translate(0, 0) scaleY(1); }
-          25%  { transform: translate(-2px, 3px) scaleY(0.94); }
-          50%  { transform: translate(3px, -2px) scaleY(1.06); }
-          75%  { transform: translate(-1px, -3px) scaleY(0.97); }
-          100% { transform: translate(0, 0) scaleY(1); }
-        }
-        @keyframes grunge-jitter-b {
-          0%   { transform: translate(0, 0) scaleY(1) skewX(0deg); }
-          33%  { transform: translate(2px, -3px) scaleY(1.08) skewX(2deg); }
-          66%  { transform: translate(-3px, 2px) scaleY(0.9) skewX(-3deg); }
-          100% { transform: translate(0, 0) scaleY(1) skewX(0deg); }
-        }
-        @keyframes grunge-jitter-c {
-          0%   { transform: translate(0, 0) scaleY(1); }
-          33%  { transform: translate(-3px, 2px) scaleY(1.1); }
-          66%  { transform: translate(2px, -3px) scaleY(0.9); }
-          100% { transform: translate(0, 0) scaleY(1); }
-        }
-        @keyframes hero-breathe {
-          0%, 100% { transform: scale(1) rotate(0deg); }
-          50% { transform: scale(1.1) rotate(5deg); }
+        /* 📍 OPTIMASI 1: Eliminasi Layer Promotion Lock (Menurunkan Commit Phase Lag) */
+        .animate-fly-in-name,
+        .animate-fly-in-degree,
+        .animate-fly-in-capabilities,
+        .grunge-jitter-a,
+        .grunge-jitter-b,
+        .grunge-jitter-c {
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+          transform-style: preserve-3d;
         }
 
-        .hero-breathe { animation: hero-breathe 12s ease-in-out infinite; }
+        /* di style jsx global ProfileSection */
+        .fx-paused .grunge-jitter-a,
+        .fx-paused .grunge-jitter-b,
+        .fx-paused .grunge-jitter-c {
+          animation-play-state: paused;
+          will-change: auto !important;
+        }
+          
+        /* melepaskan memory layer GPU setelah animasi fly-in selesai */
+        .animate-fly-in-name,
+        .animate-fly-in-degree,
+        .animate-fly-in-capabilities {
+          will-change: auto;
+          animation-fill-mode: forwards;
+        }
+
+        /* 📍 OPTIMASI 2: Compositor-Only Jitter Keyframes (3D Hardware Accelerated) */
+        @keyframes grunge-jitter-a {
+          0%, 100% { transform: translate3d(0, 0, 0) scaleY(1); }
+          25%  { transform: translate3d(-2px, 3px, 0) scaleY(0.94); }
+          50%  { transform: translate3d(3px, -2px, 0) scaleY(1.06); }
+          75%  { transform: translate3d(-1px, -3px, 0) scaleY(0.97); }
+        }
+        @keyframes grunge-jitter-b {
+          0%, 100% { transform: translate3d(0, 0, 0) scaleY(1) skewX(0deg); }
+          33%  { transform: translate3d(2px, -3px, 0) scaleY(1.08) skewX(2deg); }
+          66%  { transform: translate3d(-3px, 2px, 0) scaleY(0.9) skewX(-3deg); }
+        }
+        @keyframes grunge-jitter-c {
+          0%, 100% { transform: translate3d(0, 0, 0) scaleY(1); }
+          33%  { transform: translate3d(-3px, 2px, 0) scaleY(1.1); }
+          66%  { transform: translate3d(2px, -3px, 0) scaleY(0.9); }
+        }
+
         .grunge-jitter-a { animation: grunge-jitter-a 1.8s steps(4, jump-end) infinite; }
         .grunge-jitter-b { animation: grunge-jitter-b 1.4s steps(3, jump-end) infinite; }
         .grunge-jitter-c { animation: grunge-jitter-c 1.1s steps(3, jump-end) infinite; }
+
+        /* 📍 "THROWN BOX" ENTRANCE ANIMATIONS */
+        @keyframes fly-in-name {
+          0%   { opacity: 0; transform: translate3d(300px, -200px, -200px) rotateY(-50deg) rotateZ(35deg) scale(0.5); }
+          55%  { opacity: 1; }
+          100% { opacity: 1; transform: rotateY(-28deg) rotateX(8deg) rotateZ(-3deg) translateZ(80px) translateX(-30px); }
+        }
+        @keyframes fly-in-degree {
+          0%   { opacity: 0; transform: translate3d(340px, -160px, -200px) rotateY(-50deg) rotateZ(45deg) scale(0.5); }
+          55%  { opacity: 1; }
+          100% { opacity: 1; transform: rotateY(-24deg) rotateX(6deg) rotateZ(-2deg) translateZ(60px) translateX(-20px); }
+        }
+        @keyframes fly-in-capabilities {
+          0%   { opacity: 0; transform: translate3d(380px, -140px, -200px) rotateY(-50deg) rotateZ(-35deg) scale(0.5); }
+          55%  { opacity: 1; }
+          100% { opacity: 1; transform: rotateY(-20deg) rotateX(4deg) rotateZ(-1deg) translateZ(30px) translateX(0px); }
+        }
+
+        .animate-fly-in-name {
+          animation: fly-in-name 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation-delay: 0.05s;
+        }
+        .animate-fly-in-degree {
+          animation: fly-in-degree 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation-delay: 0.25s;
+        }
+        .animate-fly-in-capabilities {
+          animation: fly-in-capabilities 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation-delay: 0.45s;
+        }
+
+        /* 📍 OPTIMASI 3: Mobile Battery & GPU Saver */
+        @media (max-width: 640px) {
+          .grunge-jitter-a,
+          .grunge-jitter-b,
+          .grunge-jitter-c {
+            animation-duration: 3s;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .animate-fly-in-name,
+          .animate-fly-in-degree,
+          .animate-fly-in-capabilities,
+          .grunge-jitter-a,
+          .grunge-jitter-b,
+          .grunge-jitter-c {
+            animation: none !important;
+            will-change: auto;
+          }
+        }
       `}</style>
-    </div>
+    </section>
   );
 }
