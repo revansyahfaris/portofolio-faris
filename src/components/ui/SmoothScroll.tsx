@@ -2,7 +2,8 @@
 
 import { useEffect } from 'react';
 import Lenis from 'lenis';
-import 'lenis/dist/lenis.css';
+// 📍 CSS Lenis di-inline ke globals.css (lihat bagian "LENIS BASE STYLES")
+// biar gak jadi request CSS terpisah yang render-blocking sendiri.
 
 // Gunakan nama properti custom (__lenis) agar tidak bentrok dengan deklarasi bawaan paket Lenis
 declare global {
