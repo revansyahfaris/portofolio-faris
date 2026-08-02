@@ -19,13 +19,37 @@ import { TABS, DEFAULT_GITHUB_USERNAME, FALLBACK_COMMIT_COUNT } from './profile/
 import type { TabType } from './profile/types';
 import type { GithubCommitSearchResponse } from './profile/types';
 import { useViewportPresence } from '@/hooks/useViewportPresence';
+import { useContentVisibilityPreload } from '@/hooks/useContentVisibilityPreload';
 
+/**
+ * ProfileSection
+ *
+ * Section kedua di halaman, berisi identitas, kartu status/skill (dengan tab),
+ * kartu gelar, dan metrik (jumlah commit GitHub, jumlah proyek). Section ini
+ * memantau visibilitasnya sendiri lewat dua observer terpisah:
+ * - useViewportPresence (rootMargin kecil): menjeda animasi latar (flame layers)
+ *   ketika berada di luar viewport, menghemat memori GPU.
+ * - useContentVisibilityPreload (rootMargin besar): memaksa render section ini
+ *   selesai lebih awal sebelum benar-benar terlihat, agar "content-visibility: auto"
+ *   tetap menghemat memori tanpa menyebabkan burst render (jank) saat discroll masuk.
+ */
 export default function ProfileSection() {
   const [activeTab, setActiveTab] = useState<TabType>('status');
   const [commitCount, setCommitCount] = useState<number | null>(null);
   const [loadingCommits, setLoadingCommits] = useState<boolean>(true);
 
-  const sectionRef = useViewportPresence<HTMLElement>();
+  const presenceRef = useViewportPresence<HTMLElement>();
+  const preloadRef = useContentVisibilityPreload<HTMLElement>();
+
+  // Menggabungkan dua ref jadi satu callback ref, karena keduanya perlu terpasang
+  // pada elemen <section> yang sama tapi berasal dari dua hook observer berbeda.
+  const sectionRef = useCallback(
+    (node: HTMLElement | null) => {
+      presenceRef.current = node;
+      preloadRef.current = node;
+    },
+    [presenceRef, preloadRef]
+  );
 
   const handleSelectTab = useCallback((tab: TabType) => {
     setActiveTab(tab);
@@ -45,7 +69,9 @@ export default function ProfileSection() {
     });
   }, []);
 
-  // Auto fetch GitHub commit counter — AbortController & Memory Leak Safe
+  // Mengambil jumlah commit GitHub secara langsung dari GitHub Search API.
+  // AbortController memastikan fetch dibatalkan jika komponen unmount sebelum selesai,
+  // mencegah pemanggilan setState pada komponen yang sudah tidak ter-mount.
   useEffect(() => {
     const controller = new AbortController();
 
@@ -90,7 +116,12 @@ export default function ProfileSection() {
       ref={sectionRef}
       id="profile"
       className="relative min-h-[100dvh] h-[100dvh] w-full bg-zinc-950 text-white overflow-hidden font-sans select-none flex flex-col justify-between p-4 sm:p-6 md:p-10 border-t-2 border-emerald-500/40"
-      style={{ 
+      style={{
+        // "auto" di sini dikelola bersama useContentVisibilityPreload: nilai awalnya
+        // "auto" (irit memori), tapi dipaksa jadi "visible" lebih awal lewat ref di atas
+        // begitu section mendekati viewport, supaya tidak ada burst render saat discroll
+        // masuk. contain: paint implisit dari "auto" juga mencegah footer statis di
+        // bawah ke-promote jadi layer GPU terpisah akibat overlap dengan flame layers.
         contentVisibility: 'auto',
         containIntrinsicSize: '100vh',
       }}
@@ -131,9 +162,6 @@ export default function ProfileSection() {
 
       {/* 5. Footer prompt */}
       <SectionFooter />
-
-      {/* Keyframe animations & GPU Optimizations */}
-      
     </section>
   );
 }
