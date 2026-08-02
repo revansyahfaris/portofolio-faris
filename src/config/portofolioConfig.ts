@@ -1,3 +1,12 @@
+/**
+ * Sumber data tunggal untuk seluruh konten portofolio (identitas, sosial media,
+ * proyek, dan pengalaman kerja/organisasi).
+ *
+ * Catatan: bagian "projects" dan "experiences" belum ditampilkan di UI manapun
+ * saat ini — data ini disiapkan lebih dulu untuk section yang direncanakan
+ * menyusul (menu "QUEST"/"COMPANY"/"ACADEMY" di HeroSection sudah mengarah ke
+ * targetId yang section-nya belum dibuat). Bukan dead code, jangan dihapus.
+ */
 export const portofolioConfig = {
   // -------------------------------------------------------------
   // 1. PERSONAL IDENTITY & HUMAN TOUCH

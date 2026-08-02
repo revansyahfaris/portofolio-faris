@@ -2,14 +2,24 @@
 
 import React, { useEffect, useRef, memo } from 'react';
 
+/** Path SVG bentuk bintang, dipakai ulang untuk setiap bintang yang digambar di canvas. */
 const STAR_PATH_STR =
   'M 0 -50 L 14.6 -15.4 L 47.5 -15.4 L 20.9 3.8 L 30.9 38.1 L 0 19 L -30.9 38.1 L -20.9 3.8 L -47.5 -15.4 L -14.6 -15.4 Z';
 
+/** Pembangkit angka pseudo-acak berbasis seed, agar posisi bintang konsisten antar render. */
 function seededRandom(seed: number) {
   const x = Math.sin(seed) * 10000;
   return Math.abs(x - Math.floor(x));
 }
 
+/**
+ * StarsBackground
+ *
+ * Latar belakang berupa medan bintang yang digambar sekali ke <canvas> (bukan animasi
+ * berkelanjutan). Penggambaran sengaja ditunda sampai Largest Contentful Paint (LCP)
+ * terdeteksi selesai (lewat PerformanceObserver), supaya proses menggambar ratusan
+ * bintang ini tidak bersaing dengan elemen utama untuk waktu render di awal muat halaman.
+ */
 export default memo(function StarsBackground({
   cols = 34,
   rows = 14,
@@ -139,7 +149,8 @@ export default memo(function StarsBackground({
       ctx.restore();
     };
 
-    // 📍 STRATEGI PENUNDAAN PERMUKAAN DENGAN PERFORMANCE OBSERVER
+    // Strategi penundaan render: gambar bintang baru dipicu setelah LCP tercatat,
+    // dengan beberapa jalur fallback di bawah untuk memastikan tetap tergambar.
     let hasRendered = false;
 
     const triggerRenderOnce = () => {
@@ -199,7 +210,7 @@ export default memo(function StarsBackground({
 
   return (
     <div
-      className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none bg-zinc-950"
+      className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none bg-zinc-950 hero-breathe"
       style={{ contain: 'strict' }}
     >
       <canvas ref={canvasRef} className="w-full h-full object-cover" />

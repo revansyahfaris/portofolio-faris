@@ -8,6 +8,16 @@ interface QuestModalProps {
   onClose: () => void;
 }
 
+/**
+ * QuestModal
+ *
+ * Formulir kontak bergaya "dispatch quest". Dimuat lewat dynamic import dengan
+ * ssr:false karena baru dibutuhkan setelah pengguna berinteraksi (klik tombol buka),
+ * bukan bagian dari tampilan awal halaman.
+ *
+ * Catatan: pengiriman form saat ini disimulasikan di sisi klien (setTimeout) dan
+ * belum terhubung ke backend/layanan email sungguhan.
+ */
 export default function QuestModal({ isOpen, onClose }: QuestModalProps) {
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', questType: 'Full-Stack Web', details: '' });
