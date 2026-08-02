@@ -1,5 +1,16 @@
 'use client';
 
+/**
+ * HeroSection
+ *
+ * Section pertama yang tampil di halaman (di atas viewport awal / above-the-fold).
+ * Berisi:
+ * - Menu navigasi utama berbentuk daftar label yang bisa dipilih lewat scroll wheel.
+ * - Artwork/gambar hero dengan efek fade di tepi kiri dan bawah.
+ * - Integrasi dengan Lenis untuk mengunci scroll selama navigasi menu berlangsung,
+ *   dan untuk snap otomatis ke section Profile setelah menu selesai dijelajahi.
+ */
+
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import type { CSSProperties } from 'react';
 import { ArrowRight } from 'lucide-react';
@@ -16,8 +27,10 @@ declare global {
 }
 
 /* ============================================================
-   TYPES & CONSTANTS
+   TIPE DATA & KONSTANTA
    ============================================================ */
+
+/** Satu item pada menu navigasi utama Hero. */
 interface MenuItem {
   readonly id: string;
   readonly label: string;
@@ -26,6 +39,7 @@ interface MenuItem {
   readonly wrapperStyle: CSSProperties;
 }
 
+/** Konfigurasi satu lapisan efek "grunge" (bentuk polygon beranimasi) di belakang menu item yang aktif. */
 interface GrungeLayerConfig {
   readonly className: string;
   readonly clipPath: string;
@@ -75,7 +89,8 @@ const GRUNGE_LAYERS: readonly GrungeLayerConfig[] = [
   },
 ];
 
-/* 📍 Class isolasi GPU dan layout containment */
+/* Class untuk isolasi layout dan paint agar perhitungan ulang section ini
+   tidak memicu reflow pada section lain di luar Hero. */
 const ROOT_CLASSNAME =
   'relative min-h-[100dvh] h-[100dvh] w-full bg-transparent text-white overflow-hidden font-sans select-none flex flex-col justify-between p-4 sm:p-6 md:p-10 contain-layout contain-paint';
 
@@ -109,7 +124,7 @@ const TAGLINE_TEXT_STYLE: CSSProperties = { textShadow: '1px 1px 2px rgba(0,0,0,
 const BIO_BOX_STYLE: CSSProperties = { clipPath: 'polygon(4% 0, 100% 0, 100% 100%, 0 100%)' };
 
 /* ============================================================
-   FLATTENED MENU ITEM ROW
+   BARIS MENU ITEM
    ============================================================ */
 interface MenuItemRowProps {
   readonly item: MenuItem;
@@ -120,6 +135,7 @@ interface MenuItemRowProps {
   readonly onHover: (targetId: string, index: number) => void;
 }
 
+/** Satu baris menu navigasi. Menampilkan label dan efek lapisan grunge saat item ini dipilih. */
 const MenuItemRow = memo(function MenuItemRow({
   item,
   isSelected,
@@ -189,17 +205,25 @@ const ARTWORK_IMAGE_STYLE: CSSProperties = {
   transformOrigin: 'right top',
 };
 
+/**
+ * Gambar artwork utama Hero. Tepi kiri dan bawah gambar dibuat memudar (fade) memakai
+ * mask-image ganda (Webkit dan standar) agar kompatibel lintas browser.
+ *
+ * Catatan performa: kombinasi elemen besar + mask + transform pada ARTWORK_IMAGE_STYLE
+ * membuat elemen ini selalu mendapat compositing layer GPU tersendiri. Ini sudah
+ * diverifikasi sebagai biaya yang melekat pada teknik fade bermask, bukan indikasi bug.
+ */
 const HeroArtwork = memo(function HeroArtwork() {
   return (
-    <div 
-      className="absolute inset-0 z-[5] overflow-hidden pointer-events-none" 
+    <div
+      className="absolute inset-0 z-[5] overflow-hidden pointer-events-none"
       style={{ isolation: 'isolate' }}
     >
-      <div 
-        className="absolute top-0 right-0 w-[95vw] sm:w-[80vw] lg:w-[70vw]" 
+      <div
+        className="absolute top-0 right-0 w-[95vw] sm:w-[80vw] lg:w-[70vw]"
         style={ARTWORK_SHADOW_STYLE}
       >
-        <div 
+        <div
           className="w-full h-full hero-breathe relative"
           style={{
             WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 25%), linear-gradient(to top, transparent 0%, black 15%)',
@@ -231,12 +255,10 @@ interface HeroIndexDisplayProps {
   readonly selectedIndex: number;
 }
 
+/** Menampilkan nomor urut menu yang sedang aktif (misal "01", "02") secara dekoratif, diputar 90 derajat. */
 const HeroIndexDisplay = memo(function HeroIndexDisplay({ selectedIndex }: HeroIndexDisplayProps) {
   return (
-    <div
-      className="pointer-events-none select-none absolute -rotate-90 top-32 right-2 md:right-8 z-0 w-[7vw] max-w-[420px] text-right"
-      // style={{ isolation: 'isolate' }}
-    >
+    <div className="pointer-events-none select-none absolute -rotate-90 top-32 right-2 md:right-8 z-0 w-[7vw] max-w-[420px] text-right">
       <span
         key={selectedIndex}
         className="block font-serif font-black text-white leading-none opacity-90"
@@ -253,6 +275,7 @@ interface HeroTopHudProps {
   readonly onOpenModal: () => void;
 }
 
+/** Header di bagian atas Hero, berisi tombol untuk membuka QuestModal. */
 const HeroTopHud = memo(function HeroTopHud({ onOpenModal }: HeroTopHudProps) {
   return (
     <header className="relative z-30 flex items-center justify-between shrink-0">
@@ -275,6 +298,7 @@ interface HeroMenuProps {
   readonly onMenuHover: (targetId: string, index: number) => void;
 }
 
+/** Daftar menu navigasi utama, merender satu MenuItemRow untuk setiap entri di MENU_ITEMS. */
 const HeroMenu = memo(function HeroMenu({ selectedIndex, effectsReady, onMenuClick, onMenuHover }: HeroMenuProps) {
   return (
     <main className="relative z-10 my-auto py-2 flex flex-col justify-center items-start w-full max-w-xl mr-auto">
@@ -302,6 +326,7 @@ interface HeroBottomHudProps {
   readonly onOpenModal: () => void;
 }
 
+/** Panel di bagian bawah Hero: tagline, bio singkat, dan tombol "Initiate" untuk membuka QuestModal. */
 const HeroBottomHud = memo(function HeroBottomHud({ onOpenModal }: HeroBottomHudProps) {
   return (
     <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 right-4 sm:right-6 md:right-10 z-30 flex flex-col items-end gap-2 max-w-md md:max-w-xl pointer-events-none">
@@ -344,6 +369,7 @@ interface QuickScrollButtonProps {
   readonly onClick: () => void;
 }
 
+/** Tombol pintasan di pojok kiri bawah untuk scroll langsung ke section Profile. */
 const QuickScrollButton = memo(function QuickScrollButton({ onClick }: QuickScrollButtonProps) {
   return (
     <div className="absolute bottom-6 left-6 sm:left-10 z-30 pointer-events-auto">
@@ -363,6 +389,13 @@ const QuickScrollButton = memo(function QuickScrollButton({ onClick }: QuickScro
   );
 });
 
+/**
+ * Komponen utama Hero section. Bertanggung jawab atas:
+ * - State menu (index yang dipilih) dan navigasinya lewat scroll wheel maupun klik.
+ * - Sinkronisasi dengan instance Lenis global (window.__lenis) untuk mengunci scroll
+ *   selagi menu masih dijelajahi, dan melepas kunci saat sudah selesai.
+ * - Snap otomatis ke section Profile setelah pengguna mencapai menu terakhir.
+ */
 export default function HeroSection() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -372,6 +405,8 @@ export default function HeroSection() {
   const isInViewportRef = useRef(true);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const glitchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Ref dipakai supaya event listener (wheel/scroll) selalu membaca nilai terbaru
+  // tanpa perlu dependency array yang memicu pemasangan ulang listener tiap render.
   const selectedIndexRef = useRef(selectedIndex);
   const isModalOpenRef = useRef(isModalOpen);
 
@@ -383,12 +418,15 @@ export default function HeroSection() {
     isModalOpenRef.current = isModalOpen;
   }, [isModalOpen]);
 
+  // Menunda aktivasi efek visual (glow, dsb.) satu frame setelah mount,
+  // supaya tidak ikut serta dalam paint pertama.
   useEffect(() => {
     const id = requestAnimationFrame(() => setEffectsReady(true));
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // OBSERVER VIEWPORT BOUNDARY CHECK
+  // Melacak apakah Hero section sedang berada di viewport, dipakai oleh
+  // handler lain (misalnya keyboard shortcut) untuk menghindari efek saat section tidak terlihat.
   useEffect(() => {
     const rootEl = rootRef.current;
     if (!rootEl) return;
@@ -404,7 +442,9 @@ export default function HeroSection() {
     return () => observer.disconnect();
   }, []);
 
-  // KONTROL SCROLL MENU PERSONA
+  // Mengubah gesture scroll wheel menjadi navigasi menu selama masih berada di
+  // bagian atas halaman. Lenis dihentikan sementara (lenis.stop()) supaya wheel
+  // event dipakai penuh untuk berpindah antar menu, bukan menggerakkan scroll halaman.
   useEffect(() => {
     let lastStepTime = 0;
 
@@ -441,7 +481,8 @@ export default function HeroSection() {
         return;
       }
 
-      // 📍 JIKA SUDAH DI MENU TERAKHIR (CONNECT) DAN SCROLL DOWN LAGI:
+      // Jika pengguna sudah berada di menu terakhir dan tetap scroll ke bawah,
+      // lepas kunci Lenis dan lanjutkan scroll otomatis menuju section Profile.
       if (isScrollingDown && current === maxIndex) {
         if (lenis) {
           lenis.start();
@@ -469,20 +510,8 @@ export default function HeroSection() {
     };
   }, []);
 
-  // 📍 1. PROTEKSI DRAG SCROLLBAR (Mencegah loncat jika user drag scrollbar sebelum menu selesai)
-  // 🧪 DINONAKTIFKAN SEMENTARA buat tes apakah ini yang bentrok sama animasi scroll Lenis
-  // (window.scrollTo(0,0) mentah kemungkinan nembak di tengah lenis.scrollTo() pas transisi ke profile)
-  // useEffect(() => {
-  //   const handleForceLock = () => {
-  //     if (selectedIndexRef.current < MENU_ITEMS.length - 1 && window.scrollY > 0) {
-  //       window.scrollTo(0, 0);
-  //     }
-  //   };
-
-  //   window.addEventListener('scroll', handleForceLock, { passive: true });
-  //   return () => window.removeEventListener('scroll', handleForceLock);
-  // }, []);
-
+  // Menangani snap otomatis antara section Hero dan Profile berdasarkan
+  // kecepatan scroll (flick) maupun posisi akhir scroll (scrollend).
   useEffect(() => {
     let isSnapping = false;
     let rafId: number | null = null;
@@ -514,8 +543,8 @@ export default function HeroSection() {
       return currentScrollY > heroHeight * 0.02 && currentScrollY < heroHeight * 0.98;
     };
 
-    // 🚀 Jalur cepat: flick kencang -> snap instan ikutin arah gerakan.
-    // Nggak nunggu apa-apa, karena niatnya udah jelas dari kecepatannya.
+    // Jalur cepat: kalau kecepatan scroll (flick) sudah melewati ambang batas,
+    // langsung snap ke arah gerakan tanpa menunggu scroll benar-benar berhenti.
     const handleLenisScroll = ({ velocity }: { velocity: number }) => {
       if (isSnapping) return;
       if (!isInZone()) return;
@@ -524,8 +553,9 @@ export default function HeroSection() {
       }
     };
 
-    // 🎯 Jalur utama: scrollend = browser BENERAN bilang "udah selesai",
-    // termasuk seluruh sisa momentum/inertia. Bukan tebakan lagi.
+    // Jalur utama: event "scrollend" menandakan browser sudah benar-benar selesai
+    // memproses scroll (termasuk sisa momentum/inertia), sehingga lebih akurat
+    // dibanding menebak dari kecepatan saja.
     const handleScrollEnd = () => {
       if (isSnapping) return;
       if (!isInZone()) return;
@@ -627,7 +657,8 @@ export default function HeroSection() {
       <QuickScrollButton onClick={scrollToNextSection} />
 
       <style jsx global>{`
-        /* 📍 OPTIMASI 1: Eliminasi Layer Promotion Lock (Menurunkan Commit Phase Lag) */
+        /* Mencegah layer promotion terkunci pada elemen beranimasi, agar fase commit
+           rendering tidak tertahan lebih lama dari yang diperlukan. */
         .animate-fly-in-name,
         .animate-fly-in-degree,
         .animate-fly-in-capabilities,
@@ -639,15 +670,17 @@ export default function HeroSection() {
           transform-style: preserve-3d;
         }
 
-        /* di style jsx global ProfileSection */
+        /* Kelas "fx-paused" ditambahkan oleh hook useViewportPresence ketika elemen
+           terkait berada di luar viewport, agar animasi berhenti dan layer GPU
+           yang dipakainya bisa dilepas untuk menghemat memori. */
         .fx-paused .grunge-jitter-a,
         .fx-paused .grunge-jitter-b,
         .fx-paused .grunge-jitter-c {
           animation-play-state: paused;
           will-change: auto !important;
         }
-          
-        /* melepaskan memory layer GPU setelah animasi fly-in selesai */
+
+        /* Melepaskan layer GPU setelah animasi fly-in selesai berjalan. */
         .animate-fly-in-name,
         .animate-fly-in-degree,
         .animate-fly-in-capabilities {
@@ -655,7 +688,8 @@ export default function HeroSection() {
           animation-fill-mode: forwards;
         }
 
-        /* 📍 OPTIMASI 2: Compositor-Only Jitter Keyframes (3D Hardware Accelerated) */
+        /* Keyframe jitter yang hanya memakai transform 3D (translate3d/scaleY), sehingga
+           animasi berjalan sepenuhnya di compositor thread dan dipercepat GPU. */
         @keyframes grunge-jitter-a {
           0%, 100% { transform: translate3d(0, 0, 0) scaleY(1); }
           25%  { transform: translate3d(-2px, 3px, 0) scaleY(0.94); }
@@ -673,11 +707,20 @@ export default function HeroSection() {
           66%  { transform: translate3d(2px, -3px, 0) scaleY(0.9); }
         }
 
+        /* Efek "napas" halus pada HeroArtwork: sedikit membesar dan berputar
+           lalu kembali ke ukuran semula, berulang setiap 12 detik. */
+        @keyframes hero-breathe {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          50% { transform: scale(1.1) rotate(5deg); }
+        }
+
+        .hero-breathe { animation: hero-breathe 12s ease-in-out infinite; }
         .grunge-jitter-a { animation: grunge-jitter-a 1.8s steps(4, jump-end) infinite; }
         .grunge-jitter-b { animation: grunge-jitter-b 1.4s steps(3, jump-end) infinite; }
         .grunge-jitter-c { animation: grunge-jitter-c 1.1s steps(3, jump-end) infinite; }
 
-        /* 📍 "THROWN BOX" ENTRANCE ANIMATIONS */
+        /* Animasi masuk (entrance) berbentuk "kotak yang dilempar" untuk elemen identitas
+           di ProfileSection: melayang masuk dari sudut dengan rotasi 3D lalu mendarat pada posisi akhir. */
         @keyframes fly-in-name {
           0%   { opacity: 0; transform: translate3d(300px, -200px, -200px) rotateY(-50deg) rotateZ(35deg) scale(0.5); }
           55%  { opacity: 1; }
@@ -707,7 +750,7 @@ export default function HeroSection() {
           animation-delay: 0.45s;
         }
 
-        /* 📍 OPTIMASI 3: Mobile Battery & GPU Saver */
+        /* Memperlambat durasi animasi jitter di layar kecil untuk menghemat baterai dan beban GPU. */
         @media (max-width: 640px) {
           .grunge-jitter-a,
           .grunge-jitter-b,
