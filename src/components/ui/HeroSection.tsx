@@ -15,7 +15,6 @@ import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import type { CSSProperties } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { portofolioConfig } from '../../config/portofolioConfig';
-import QuestModal from './QuestModal';
 import Image from 'next/image';
 import StarsBackground from './StarsBackground';
 import type Lenis from 'lenis';
@@ -272,16 +271,26 @@ const HeroIndexDisplay = memo(function HeroIndexDisplay({ selectedIndex }: HeroI
 });
 
 interface HeroTopHudProps {
-  readonly onOpenModal: () => void;
+  readonly onDispatchQuest: () => void;
 }
 
-/** Header di bagian atas Hero, berisi tombol untuk membuka QuestModal. */
-const HeroTopHud = memo(function HeroTopHud({ onOpenModal }: HeroTopHudProps) {
+/**
+ * Header di bagian atas Hero, berisi tombol ajakan utama.
+ *
+ * Tombol ini dulunya membuka QuestModal. Karena modal tersebut dinonaktifkan
+ * (formulirnya masih menyimulasikan pengiriman dan tidak terhubung ke backend),
+ * tombolnya kini mengarahkan pengguna ke section Connect yang formulirnya benar-
+ * benar terkirim. Membiarkannya memanggil handler yang tidak menghasilkan apa pun
+ * jauh lebih buruk daripada mengubah tujuannya: pengguna menekan tombol paling
+ * menonjol di halaman lalu tidak terjadi apa-apa.
+ */
+const HeroTopHud = memo(function HeroTopHud({ onDispatchQuest }: HeroTopHudProps) {
   return (
     <header className="relative z-30 flex items-center justify-between shrink-0">
       <div className="flex items-center gap-3 text-xs font-mono">
         <button
-          onClick={onOpenModal}
+          type="button"
+          onClick={onDispatchQuest}
           className="bg-white text-zinc-950 font-black px-4 py-1.5 -rotate-2 hover:bg-red-600 hover:text-white transition uppercase tracking-wider text-xs shadow-lg cursor-pointer"
         >
           DISPATCH QUEST
@@ -323,11 +332,11 @@ const HeroMenu = memo(function HeroMenu({ selectedIndex, effectsReady, onMenuCli
 });
 
 interface HeroBottomHudProps {
-  readonly onOpenModal: () => void;
+  readonly onDispatchQuest: () => void;
 }
 
-/** Panel di bagian bawah Hero: tagline, bio singkat, dan tombol "Initiate" untuk membuka QuestModal. */
-const HeroBottomHud = memo(function HeroBottomHud({ onOpenModal }: HeroBottomHudProps) {
+/** Panel di bagian bawah Hero: tagline, bio singkat, dan tombol "Initiate" menuju section Connect. */
+const HeroBottomHud = memo(function HeroBottomHud({ onDispatchQuest }: HeroBottomHudProps) {
   return (
     <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 right-4 sm:right-6 md:right-10 z-30 flex flex-col items-end gap-2 max-w-md md:max-w-xl pointer-events-none">
       <div className="relative w-full flex justify-end px-4">
@@ -355,7 +364,8 @@ const HeroBottomHud = memo(function HeroBottomHud({ onOpenModal }: HeroBottomHud
 
       <div className="flex items-center gap-2 sm:gap-3 mt-1 pointer-events-auto">
         <button
-          onClick={onOpenModal}
+          type="button"
+          onClick={onDispatchQuest}
           className="group flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white font-serif font-black px-4 sm:px-6 py-2 -rotate-2 shadow-[3px_3px_0px_rgba(255,255,255,0.9)] transition uppercase tracking-wider text-xs md:text-sm cursor-pointer whitespace-nowrap"
         >
           INITIATE <ArrowRight size={16} />
@@ -397,7 +407,6 @@ const QuickScrollButton = memo(function QuickScrollButton({ onClick }: QuickScro
  * - Snap otomatis ke section Profile setelah pengguna mencapai menu terakhir.
  */
 export default function HeroSection() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [effectsReady, setEffectsReady] = useState(false);
 
@@ -408,15 +417,10 @@ export default function HeroSection() {
   // Ref dipakai supaya event listener (wheel/scroll) selalu membaca nilai terbaru
   // tanpa perlu dependency array yang memicu pemasangan ulang listener tiap render.
   const selectedIndexRef = useRef(selectedIndex);
-  const isModalOpenRef = useRef(isModalOpen);
 
   useEffect(() => {
     selectedIndexRef.current = selectedIndex;
   }, [selectedIndex]);
-
-  useEffect(() => {
-    isModalOpenRef.current = isModalOpen;
-  }, [isModalOpen]);
 
   // Menunda aktivasi efek visual (glow, dsb.) satu frame setelah mount,
   // supaya tidak ikut serta dalam paint pertama.
@@ -586,7 +590,7 @@ export default function HeroSection() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 'm' && !isModalOpenRef.current) {
+      if (e.key.toLowerCase() === 'm') {
         rootRef.current?.classList.add('invert', 'contrast-200');
         if (glitchTimeoutRef.current) clearTimeout(glitchTimeoutRef.current);
         glitchTimeoutRef.current = setTimeout(() => {
@@ -615,12 +619,15 @@ export default function HeroSection() {
     }
   }, []);
 
-  const handleOpenModal = useCallback(() => {
-    setIsModalOpen(true);
-  }, []);
-
-  const handleCloseModal = useCallback(() => {
-    setIsModalOpen(false);
+  /**
+   * Membawa pengguna ke section Connect.
+   *
+   * Menggantikan pembukaan QuestModal yang formulirnya belum terhubung ke backend.
+   * Section Connect punya formulir yang benar-benar terkirim beserta jalur kontak
+   * langsung, jadi tujuan tombolnya tetap sama — hanya jalurnya yang kini nyata.
+   */
+  const scrollToContact = useCallback(() => {
+    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
   const handleMenuSelect = useCallback((_targetId: string, index: number) => {
@@ -643,17 +650,16 @@ export default function HeroSection() {
   return (
     <section id="hero" ref={rootRef} className={ROOT_CLASSNAME}>
       <StarsBackground />
-      <QuestModal isOpen={isModalOpen} onClose={handleCloseModal} />
       <HeroArtwork />
       <HeroIndexDisplay selectedIndex={selectedIndex} />
-      <HeroTopHud onOpenModal={handleOpenModal} />
+      <HeroTopHud onDispatchQuest={scrollToContact} />
       <HeroMenu
         selectedIndex={selectedIndex}
         effectsReady={effectsReady}
         onMenuClick={handleMenuClick}
         onMenuHover={handleMenuSelect}
       />
-      <HeroBottomHud onOpenModal={handleOpenModal} />
+      <HeroBottomHud onDispatchQuest={scrollToContact} />
       <QuickScrollButton onClick={scrollToNextSection} />
 
       <style jsx global>{`
