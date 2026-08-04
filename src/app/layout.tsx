@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Inter, Gelasio } from 'next/font/google';
 import './globals.css';
 import { portofolioConfig } from '@/config/portofolioConfig';
+import { FREEZE_IDLE_SECTIONS } from '@/config/motionFlags';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -125,7 +126,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className={`${inter.variable} ${gelasio.variable}`}>
+    <html
+      lang="id"
+      className={`${inter.variable} ${gelasio.variable}`}
+      // Sakelar diagnosis sementara; aturannya ada di globals.css. Dipasang
+      // sebagai atribut dan bukan sebagai kelas supaya jelas terbaca sebagai
+      // keadaan pengembangan, bukan sebagai bagian dari gaya rancangan.
+      data-freeze-idle-sections={FREEZE_IDLE_SECTIONS ? '' : undefined}
+    >
       <head>
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <script

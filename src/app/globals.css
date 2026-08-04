@@ -198,6 +198,26 @@ html.lenis body {
 }
 
 /* ============================================================
+   SAKELAR DIAGNOSIS — SEMENTARA. Lihat src/config/motionFlags.ts
+
+   Membekukan gerak di seluruh section KECUALI hero, profile, dan skills,
+   supaya beban gambar terkumpul pada satu section yang sedang diuji.
+
+   Yang dimatikan bukan hanya animation dan transition tetapi juga
+   will-change: properti itulah yang membuat browser menyiapkan lapisan
+   komposit tersendiri untuk sebuah elemen, dan lapisan yang menganggur tetap
+   memakan memori grafis meski tidak ada satu pun frame yang berjalan di atasnya.
+   ============================================================ */
+html[data-freeze-idle-sections] section:not(#hero):not(#profile):not(#skills),
+html[data-freeze-idle-sections] section:not(#hero):not(#profile):not(#skills) *,
+html[data-freeze-idle-sections] section:not(#hero):not(#profile):not(#skills) *::before,
+html[data-freeze-idle-sections] section:not(#hero):not(#profile):not(#skills) *::after {
+  animation: none !important;
+  transition: none !important;
+  will-change: auto !important;
+}
+
+/* ============================================================
    GLOBAL WINDOW SCROLLBAR (Tampil di Seluruh Halaman)
    ============================================================ */
 
