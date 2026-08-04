@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import type { CSSProperties } from 'react';
 import { SKILLS } from './palette';
+import { rigid, withDrift } from './units';
 
 interface SkillsStarsProps {
   readonly state: 'closed' | 'open';
@@ -20,25 +21,47 @@ interface StarPlacement {
   readonly opacity?: number;
   readonly baseOffsetX?: number;
   readonly baseOffsetY?: number;
+  /**
+   * Simpangan mendatar yang hanya berlaku saat rasio layar menyimpang dari
+   * acuan. Positif menggeser ke kanan saat jendela makin lebar-pendek.
+   */
+  readonly driftX?: number;
+  /**
+   * Simpangan tegak dengan aturan yang sama. Negatif menaikkan.
+   */
+  readonly driftY?: number;
 }
+
+/**
+ * Dua penyetel khusus mode windowed.
+ *
+ * Keduanya bernilai nol pada rasio acuan, jadi fullscreen tidak tersentuh. Satu
+ * angka mengendalikan seluruh anggota kelompoknya — kelompok atas terdiri dari
+ * tiga bintang yang masing-masing dirender berkali-kali untuk lapisan blend
+ * berbeda, dan semuanya WAJIB bergeser bersamaan. Menuliskan angkanya satu per
+ * satu di tiap entri berarti cepat atau lambat ada satu yang tertinggal dan
+ * bintangnya terbelah.
+ */
+const LEFT_STAR_RISE = -0.3;
+const TOP_GROUP_SHIFT = 0.95;
 
 const CLOSED_STARS: readonly StarPlacement[] = [
   // Bintang kiri tengah
-  { top: '18vh', left: '-9vw', size: 36, rotate: 28, blend: 'normal', baseOffsetX: -8, baseOffsetY: 2 },
+  { top: '18vh', left: '-9vw', size: 36, rotate: 28, blend: 'normal', baseOffsetX: -8, baseOffsetY: 2, driftY: LEFT_STAR_RISE },
 
   // Grup bintang atas
-  { top: '0vh', left: '20vw', size: 22, rotate: 21, blend: 'multiply', invert: true, baseOffsetX: -5, baseOffsetY: -6 },
-  { top: '-6vh', left: '25vw', size: 28, rotate: -28, blend: 'multiply', invert: true, baseOffsetX: -5, baseOffsetY: -6 },
+  { top: '0vh', left: '20vw', size: 22, rotate: 21, blend: 'multiply', invert: true, baseOffsetX: -5, baseOffsetY: -6, driftX: TOP_GROUP_SHIFT },
+  { top: '-6vh', left: '25vw', size: 28, rotate: -28, blend: 'multiply', invert: true, baseOffsetX: -5, baseOffsetY: -6, driftX: TOP_GROUP_SHIFT },
 
-  { top: '-24vh', left: '12vw', size: 42, rotate: 0, blend: 'difference' },
-  { top: '-24vh', left: '12vw', size: 42, rotate: 0, blend: 'multiply', invert: true, baseOffsetX: -5, baseOffsetY: -6 },
-  
-  { top: '0vh', left: '20vw', size: 22, rotate: 21, blend: 'difference' },
-  { top: '0vh', left: '20vw', size: 22, rotate: 21, blend: 'multiply', invert: true, },
-  
+  { top: '-24vh', left: '12vw', size: 42, rotate: 0, blend: 'difference', driftX: TOP_GROUP_SHIFT },
+  { top: '-24vh', left: '12vw', size: 42, rotate: 0, blend: 'multiply', invert: true, baseOffsetX: -5, baseOffsetY: -6, driftX: TOP_GROUP_SHIFT },
 
-  { top: '-6vh', left: '25vw', size: 28, rotate: -28, blend: 'difference' },
-  { top: '-6vh', left: '25vw', size: 28, rotate: -28, blend: 'multiply', invert: true, },
+  { top: '0vh', left: '20vw', size: 22, rotate: 21, blend: 'difference', driftX: TOP_GROUP_SHIFT },
+  { top: '0vh', left: '20vw', size: 22, rotate: 21, blend: 'multiply', invert: true, driftX: TOP_GROUP_SHIFT },
+
+
+  { top: '-6vh', left: '25vw', size: 28, rotate: -28, blend: 'difference', driftX: TOP_GROUP_SHIFT },
+  { top: '-6vh', left: '25vw', size: 28, rotate: -28, blend: 'multiply', invert: true, driftX: TOP_GROUP_SHIFT },
 
   // Grup bintang kiri bawah
   { bottom: '-10vh', left: '3vw', size: 22, rotate: 8, blend: 'multiply', invert: true, baseOffsetX: -5, baseOffsetY: -6 },
@@ -102,10 +125,13 @@ export const SkillsStars = memo(function SkillsStars({ state }: SkillsStarsProps
         key={index}
         className="absolute"
         style={{
-          top: star.top,
-          right: star.right,
-          bottom: star.bottom,
-          left: star.left,
+          // top dan bottom dilewatkan apa adanya: keduanya sudah bersatuan vh
+          // dan memang sudah sejalan. Hanya left dan right yang dialihkan, dan
+          // itu pun hanya bila nilainya bersatuan vw.
+          top: withDrift(star.top, star.driftY),
+          right: withDrift(star.right, star.driftX && -star.driftX),
+          bottom: withDrift(star.bottom, star.driftY && -star.driftY),
+          left: withDrift(star.left, star.driftX),
           width: `${star.size}vh`,
           height: `${star.size}vh`,
           opacity: star.opacity,

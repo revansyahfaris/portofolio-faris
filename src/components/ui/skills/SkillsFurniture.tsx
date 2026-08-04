@@ -2,6 +2,7 @@
 
 import { memo } from 'react';
 import { SKILLS } from './palette';
+import { rigid } from './units';
 
 interface SkillsFurnitureProps {
   /** 
@@ -39,7 +40,7 @@ export const SkillsFurniture = memo(function SkillsFurniture({
         className="absolute font-serif font-bold leading-none tabular-nums"
         style={{
           top: NUMBER_PLACEMENT.top,
-          right: NUMBER_PLACEMENT.right,
+          right: rigid(NUMBER_PLACEMENT.right),
           fontSize: `${NUMBER_PLACEMENT.size}vh`,
           color: SKILLS.teal,
           transform: 'rotate(45deg)',
@@ -54,7 +55,7 @@ export const SkillsFurniture = memo(function SkillsFurniture({
         className="absolute font-serif font-bold leading-none mix-blend-exclusion z-40"
         style={{
           bottom: wordmark.bottom,
-          right: wordmark.right,
+          right: rigid(wordmark.right),
           fontSize: `${wordmark.size}vh`,
           color: SKILLS.redBright,
         }}

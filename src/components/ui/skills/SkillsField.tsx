@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { CategoryLabel } from './CategoryLabel';
 import { SKILLS } from './palette';
+import { boxWidthPercent, vw } from './units';
 import type { LetterSpec } from './types';
 
 /** Isi satu slot: nama kategori beserta tatanan per hurufnya. */
@@ -50,7 +51,14 @@ export const ACTIVE_SLOT = 1;
  * bertemu di satu simpul — dan simpul itu langsung terbaca sebagai pusat
  * komposisi, padahal pusat perhatiannya seharusnya di tempat lain.
  */
-const VANISHING_POINT = { right: '-14%', top: '112%' };
+/*
+ * `right` dialihkan ke satuan tinggi karena persen pada properti itu diukur
+ * terhadap LEBAR — satu-satunya nilai digerakkan-lebar di seluruh kipas, dan
+ * karena kipas berputar pada titik ini, pergeserannya menular ke ketiga bidang
+ * sekaligus. `top` dibiarkan: persen pada properti itu diukur terhadap TINGGI,
+ * jadi sudah sejalan dengan sisanya sejak semula.
+ */
+const VANISHING_POINT = { right: boxWidthPercent(-14), top: '112%' };
 
 /**
  * Ketiga bidang pada keadaan tertutup.
@@ -162,7 +170,9 @@ export const SkillsField = memo(function SkillsField({ state, slots }: SkillsFie
               <div
                 className="absolute"
                 style={{
-                  right: `${shape.labelStart}vw`,
+                  // labelStart tetap ditulis dalam vw pada FAN_SHAPES; yang
+                  // berubah hanya satuan yang dikeluarkan, bukan angkanya.
+                  right: vw(shape.labelStart),
                   top: `${shape.labelTop}vh`,
                 }}
               >
