@@ -24,7 +24,10 @@ import { useEffect, useRef } from 'react';
  * (perlu dipicu jauh sebelum section terlihat, bukan sesaat sebelum/sesudah).
  */
 export function useContentVisibilityPreload<T extends HTMLElement>(
-  rootMargin = '150% 0px'
+  // ponytail: margin must stay <100dvh or it reaches a second section away
+  // (each section is exactly 100dvh); raise toward 100% only if fast
+  // multi-section flings/menu-jumps start showing a paint burst.
+  rootMargin = '80% 0px'
 ) {
   const ref = useRef<T | null>(null);
 

@@ -19,37 +19,13 @@ import { TABS, DEFAULT_GITHUB_USERNAME, FALLBACK_COMMIT_COUNT } from './profile/
 import type { TabType } from './profile/types';
 import type { GithubCommitSearchResponse } from './profile/types';
 import { useViewportPresence } from '@/hooks/useViewportPresence';
-import { useContentVisibilityPreload } from '@/hooks/useContentVisibilityPreload';
 
-/**
- * ProfileSection
- *
- * Section kedua di halaman, berisi identitas, kartu status/skill (dengan tab),
- * kartu gelar, dan metrik (jumlah commit GitHub, jumlah proyek). Section ini
- * memantau visibilitasnya sendiri lewat dua observer terpisah:
- * - useViewportPresence (rootMargin kecil): menjeda animasi latar (flame layers)
- *   ketika berada di luar viewport, menghemat memori GPU.
- * - useContentVisibilityPreload (rootMargin besar): memaksa render section ini
- *   selesai lebih awal sebelum benar-benar terlihat, agar "content-visibility: auto"
- *   tetap menghemat memori tanpa menyebabkan burst render (jank) saat discroll masuk.
- */
 export default function ProfileSection() {
   const [activeTab, setActiveTab] = useState<TabType>('status');
   const [commitCount, setCommitCount] = useState<number | null>(null);
   const [loadingCommits, setLoadingCommits] = useState<boolean>(true);
 
-  const presenceRef = useViewportPresence<HTMLElement>();
-  const preloadRef = useContentVisibilityPreload<HTMLElement>();
-
-  // Menggabungkan dua ref jadi satu callback ref, karena keduanya perlu terpasang
-  // pada elemen <section> yang sama tapi berasal dari dua hook observer berbeda.
-  const sectionRef = useCallback(
-    (node: HTMLElement | null) => {
-      presenceRef.current = node;
-      preloadRef.current = node;
-    },
-    [presenceRef, preloadRef]
-  );
+  const sectionRef = useViewportPresence<HTMLElement>();
 
   const handleSelectTab = useCallback((tab: TabType) => {
     setActiveTab(tab);
@@ -69,9 +45,7 @@ export default function ProfileSection() {
     });
   }, []);
 
-  // Mengambil jumlah commit GitHub secara langsung dari GitHub Search API.
-  // AbortController memastikan fetch dibatalkan jika komponen unmount sebelum selesai,
-  // mencegah pemanggilan setState pada komponen yang sudah tidak ter-mount.
+  // Auto fetch GitHub commit counter — AbortController & Memory Leak Safe
   useEffect(() => {
     const controller = new AbortController();
 
@@ -116,12 +90,7 @@ export default function ProfileSection() {
       ref={sectionRef}
       id="profile"
       className="relative min-h-[100dvh] h-[100dvh] w-full bg-zinc-950 text-white overflow-hidden font-sans select-none flex flex-col justify-between p-4 sm:p-6 md:p-10 border-t-2 border-emerald-500/40"
-      style={{
-        // "auto" di sini dikelola bersama useContentVisibilityPreload: nilai awalnya
-        // "auto" (irit memori), tapi dipaksa jadi "visible" lebih awal lewat ref di atas
-        // begitu section mendekati viewport, supaya tidak ada burst render saat discroll
-        // masuk. contain: paint implisit dari "auto" juga mencegah footer statis di
-        // bawah ke-promote jadi layer GPU terpisah akibat overlap dengan flame layers.
+      style={{ 
         contentVisibility: 'auto',
         containIntrinsicSize: '100vh',
       }}
@@ -162,6 +131,115 @@ export default function ProfileSection() {
 
       {/* 5. Footer prompt */}
       <SectionFooter />
+
+      {/* Keyframe animations & GPU Optimizations */}
+      <style jsx global>{`
+        /* 📍 OPTIMASI 1: Eliminasi Layer Promotion Lock (Menurunkan Commit Phase Lag) */
+        .animate-fly-in-name,
+        .animate-fly-in-degree,
+        .animate-fly-in-capabilities,
+        .grunge-jitter-a,
+        .grunge-jitter-b,
+        .grunge-jitter-c {
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+          transform-style: preserve-3d;
+        }
+
+        /* di style jsx global ProfileSection */
+        .fx-paused .grunge-jitter-a,
+        .fx-paused .grunge-jitter-b,
+        .fx-paused .grunge-jitter-c {
+          animation-play-state: paused;
+          will-change: auto !important;
+          /* ponytail: transform-gpu (translateZ(0)) alone still forces a GPU
+             layer even after will-change resets; drop it too so these 5
+             oversized (up to ~2x viewport) flame layers actually release
+             while off-screen instead of staying composited. */
+          transform: none !important;
+        }
+          
+        /* melepaskan memory layer GPU setelah animasi fly-in selesai */
+        .animate-fly-in-name,
+        .animate-fly-in-degree,
+        .animate-fly-in-capabilities {
+          will-change: auto;
+          animation-fill-mode: forwards;
+        }
+
+        /* 📍 OPTIMASI 2: Compositor-Only Jitter Keyframes (3D Hardware Accelerated) */
+        @keyframes grunge-jitter-a {
+          0%, 100% { transform: translate3d(0, 0, 0) scaleY(1); }
+          25%  { transform: translate3d(-2px, 3px, 0) scaleY(0.94); }
+          50%  { transform: translate3d(3px, -2px, 0) scaleY(1.06); }
+          75%  { transform: translate3d(-1px, -3px, 0) scaleY(0.97); }
+        }
+        @keyframes grunge-jitter-b {
+          0%, 100% { transform: translate3d(0, 0, 0) scaleY(1) skewX(0deg); }
+          33%  { transform: translate3d(2px, -3px, 0) scaleY(1.08) skewX(2deg); }
+          66%  { transform: translate3d(-3px, 2px, 0) scaleY(0.9) skewX(-3deg); }
+        }
+        @keyframes grunge-jitter-c {
+          0%, 100% { transform: translate3d(0, 0, 0) scaleY(1); }
+          33%  { transform: translate3d(-3px, 2px, 0) scaleY(1.1); }
+          66%  { transform: translate3d(2px, -3px, 0) scaleY(0.9); }
+        }
+
+        .grunge-jitter-a { animation: grunge-jitter-a 1.8s steps(4, jump-end) infinite; }
+        .grunge-jitter-b { animation: grunge-jitter-b 1.4s steps(3, jump-end) infinite; }
+        .grunge-jitter-c { animation: grunge-jitter-c 1.1s steps(3, jump-end) infinite; }
+
+        /* 📍 "THROWN BOX" ENTRANCE ANIMATIONS */
+        @keyframes fly-in-name {
+          0%   { opacity: 0; transform: translate3d(300px, -200px, -200px) rotateY(-50deg) rotateZ(35deg) scale(0.5); }
+          55%  { opacity: 1; }
+          100% { opacity: 1; transform: rotateY(-28deg) rotateX(8deg) rotateZ(-3deg) translateZ(80px) translateX(-30px); }
+        }
+        @keyframes fly-in-degree {
+          0%   { opacity: 0; transform: translate3d(340px, -160px, -200px) rotateY(-50deg) rotateZ(45deg) scale(0.5); }
+          55%  { opacity: 1; }
+          100% { opacity: 1; transform: rotateY(-24deg) rotateX(6deg) rotateZ(-2deg) translateZ(60px) translateX(-20px); }
+        }
+        @keyframes fly-in-capabilities {
+          0%   { opacity: 0; transform: translate3d(380px, -140px, -200px) rotateY(-50deg) rotateZ(-35deg) scale(0.5); }
+          55%  { opacity: 1; }
+          100% { opacity: 1; transform: rotateY(-20deg) rotateX(4deg) rotateZ(-1deg) translateZ(30px) translateX(0px); }
+        }
+
+        .animate-fly-in-name {
+          animation: fly-in-name 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation-delay: 0.05s;
+        }
+        .animate-fly-in-degree {
+          animation: fly-in-degree 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation-delay: 0.25s;
+        }
+        .animate-fly-in-capabilities {
+          animation: fly-in-capabilities 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation-delay: 0.45s;
+        }
+
+        /* 📍 OPTIMASI 3: Mobile Battery & GPU Saver */
+        @media (max-width: 640px) {
+          .grunge-jitter-a,
+          .grunge-jitter-b,
+          .grunge-jitter-c {
+            animation-duration: 3s;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .animate-fly-in-name,
+          .animate-fly-in-degree,
+          .animate-fly-in-capabilities,
+          .grunge-jitter-a,
+          .grunge-jitter-b,
+          .grunge-jitter-c {
+            animation: none !important;
+            will-change: auto;
+          }
+        }
+      `}</style>
     </section>
   );
 }

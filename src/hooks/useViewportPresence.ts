@@ -10,7 +10,7 @@ import { useEffect, useRef } from 'react';
  * elemen berada di luar layar, sehingga layer compositing yang dipakainya bisa
  * dilepas dan memori GPU tidak terus terpakai untuk konten yang tidak terlihat.
  * rootMargin diberi jarak 200px agar animasi berhenti sedikit sebelum benar-benar
- * keluar layar, menghindari efek "kedutan" saat batas viewport tepat terlewati.
+ * keluar layar, menghindari efek "kedutan" saat b  atas viewport tepat terlewati.
  */
 export function useViewportPresence<T extends HTMLElement>(
   options?: IntersectionObserverInit
