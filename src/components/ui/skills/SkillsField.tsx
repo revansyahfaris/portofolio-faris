@@ -1,47 +1,49 @@
 import { memo } from 'react';
+import type { RefObject } from 'react';
 import { CategoryLabel } from './CategoryLabel';
 import { SKILLS } from './palette';
+import { FAN_TURN_DEG, MOTION, SHEET_TRANSITION, transition } from './motion';
+import {
+  ACTIVE_SLOT,
+  LABEL_SIZE,
+  LABEL_TOP,
+  SHEET_THICKNESS,
+  SLOT_GEOMETRY,
+  VISIBLE_SLOTS,
+} from './slots';
 import { boxWidthPercent, vw } from './units';
-import type { LetterSpec } from './types';
-
-/** Isi satu slot: nama kategori beserta tatanan per hurufnya. */
-export interface FieldSlot {
-  readonly label: string;
-  readonly letters?: readonly LetterSpec[];
-}
+import type { Sheet } from './useSheetCarousel';
 
 interface SkillsFieldProps {
   /**
    * Keadaan section.
    * - "closed" : daftar kategori. Tiga bidang memancar dari titik hilang.
-   * - "open"   : rincian satu teknologi. Bidang terbelah mendatar, putih di atas.
+   * - "open"   : bidang putih dasar layar rincian.
    */
   readonly state: 'closed' | 'open';
+  /** Label kategori beserta slot yang sedang ditempatinya. */
+  readonly sheets?: readonly Sheet[];
   /**
-   * Isi ketiga slot, urut dari atas ke bawah:
-   * [kategori sebelumnya, kategori aktif, kategori berikutnya].
-   * Hanya dipakai pada keadaan tertutup.
+   * Sedang menuju keadaan terbuka. Memutar seluruh kipas sedikit berlawanan
+   * arah jarum jam sesaat sebelum tertimbun bidang merah.
    */
-  readonly slots?: readonly [FieldSlot, FieldSlot, FieldSlot];
+  readonly isOpen?: boolean;
+  /** Memilih kategori sejauh delta slot dari yang sedang aktif. */
+  readonly onSelect?: (delta: number) => void;
+  /** Membuka layar rincian kategori aktif. */
+  readonly onOpen?: () => void;
+  /** Tombol label kategori yang sedang aktif, untuk pengembalian fokus. */
+  readonly activeButtonRef?: RefObject<HTMLButtonElement | null>;
 }
 
 /**
  * Tinggi bidang putih pada keadaan terbuka, sebagai persentase tinggi layar.
  *
- * Dipisah sebagai konstanta karena judul teknologi nanti harus duduk tepat pada
- * batas ini — keduanya wajib membaca angka yang sama, bukan dua angka yang
- * kebetulan mirip dan bisa menyimpang saat salah satunya disetel.
+ * Dipisah sebagai konstanta karena judul teknologi harus duduk tepat pada batas
+ * ini — keduanya wajib membaca angka yang sama, bukan dua angka yang kebetulan
+ * mirip dan bisa menyimpang saat salah satunya disetel.
  */
 export const OPEN_SPLIT_PERCENT = 34;
-
-/**
- * Indeks slot yang menampung kategori terpilih.
- *
- * Slot tengah, karena kategori aktif harus punya tetangga di atas dan di bawahnya
- * — itulah yang memberi tahu pengguna bahwa daftarnya bisa digulir dua arah tanpa
- * perlu petunjuk tertulis.
- */
-export const ACTIVE_SLOT = 1;
 
 /**
  * Titik hilang tempat ketiga bidang memancar.
@@ -50,147 +52,201 @@ export const ACTIVE_SLOT = 1;
  * terlihat. Bila titiknya berada di dalam layar, ketiga bidang akan tampak
  * bertemu di satu simpul — dan simpul itu langsung terbaca sebagai pusat
  * komposisi, padahal pusat perhatiannya seharusnya di tempat lain.
- */
-/*
+ *
  * `right` dialihkan ke satuan tinggi karena persen pada properti itu diukur
- * terhadap LEBAR — satu-satunya nilai digerakkan-lebar di seluruh kipas, dan
- * karena kipas berputar pada titik ini, pergeserannya menular ke ketiga bidang
- * sekaligus. `top` dibiarkan: persen pada properti itu diukur terhadap TINGGI,
- * jadi sudah sejalan dengan sisanya sejak semula.
+ * terhadap LEBAR. `top` dibiarkan: persen pada properti itu diukur terhadap
+ * TINGGI, jadi sudah sejalan dengan sisanya sejak semula.
  */
 const VANISHING_POINT = { right: boxWidthPercent(-14), top: '112%' };
 
 /**
- * Ketiga bidang pada keadaan tertutup.
+ * Kerangka satu slot pada kipas: kotak sepanjang bidang, berporos di titik
+ * hilang, dan dimiringkan sesuai sudut slotnya.
  *
- * Jumlahnya tetap tiga berapa pun banyaknya kategori: ketiganya adalah JENDELA
- * yang bergeser, bukan satu bidang untuk tiap kategori. Panah atas/bawah hanya
- * mengganti kategori mana yang menempati ketiga slot ini, sehingga menambah
- * kategori tidak pernah mengubah komposisinya.
- *
- * Sudutnya sengaja BERBEDA-BEDA. Bidang sejajar akan terbaca sebagai garis-garis
- * latar; bidang yang sudutnya merenggang seperti kipas tangan memberi kesan ruang
- * dan arah. Karena sudutnya berbeda, ketiganya tidak mungkin dibuat dengan satu
- * linear-gradient — gradasi hanya punya satu arah untuk seluruh pitanya.
- *
- * Semua rotasi memakai poros yang sama (titik hilang), sehingga mengubah satu
- * sudut tidak pernah membuat bidangnya lepas dari susunan kipas.
- *
- * - angle      : derajat menurun ke kanan; makin besar makin curam
- * - offset     : jarak bidang dari titik hilang, dalam vh, sebelum diputar
- * - thickness  : tebal bidang dalam vh
- * - labelStart : jarak TEPI KIRI label dari titik hilang, diukur menyusuri bidang,
- *                dalam vw. Makin besar, makin ke kiri letak awal teksnya.
- * - labelTop   : posisi label dari tepi atas bidang, dalam vh
- * - labelSize  : ukuran huruf label, dalam vh
- *
- * Nilai labelStart yang dibutuhkan berbeda-beda meski letaknya di layar mirip,
- * karena jarak diukur MENYUSURI bidang yang miring, bukan mendatar. Makin curam
- * sudutnya, makin jauh jarak yang harus ditempuh untuk mencapai posisi mendatar
- * yang sama — kira-kira sebesar pembagian dengan kosinus sudutnya.
+ * Dipakai DUA KALI dengan isi berbeda — sekali oleh bidang merahnya yang diam,
+ * sekali oleh label yang berpindah. Keduanya karena itu memakai satu perhitungan
+ * posisi yang sama persis, sehingga label tidak mungkin melenceng dari bidangnya
+ * betapapun sudut atau jaraknya disetel ulang. Bila keduanya menghitung
+ * sendiri-sendiri, angka yang sama harus ditulis dua kali dan cepat atau lambat
+ * salah satunya tertinggal.
  */
-const FAN_SHAPES: readonly {
-  angle: number;
-  offset: number;
-  thickness: number;
-  color: string;
-  labelStart: number;
-  labelTop: number;
-  labelSize: number;
-}[] = [
-  { angle: 42, offset: -25, thickness: 75, color: SKILLS.red, labelStart: 42, labelTop: 1.5, labelSize: 20 },
-  { angle: 29, offset: -13, thickness: 75, color: SKILLS.redBright, labelStart: 52, labelTop: 1.5, labelSize: 20 },
-  { angle: 16, offset: -9, thickness: 75, color: SKILLS.red, labelStart: 57, labelTop: 1.5, labelSize: 20 },
-];
+const slotFrameStyle = (slot: number) => {
+  const geometry = SLOT_GEOMETRY[slot];
+  return {
+    top: `${geometry.offset}vh`,
+    // Lebar berlebih memastikan bidang tetap melintasi seluruh layar pada sudut
+    // mana pun; sisanya terpotong oleh overflow induknya.
+    width: '260vw',
+    height: `${SHEET_THICKNESS}vh`,
+    // Poros di ujung KANAN, tepat pada titik hilang. Rotasi searah jarum jam
+    // menurunkan ujung kirinya, dan karena bidang memanjang jauh ke kiri,
+    // hasilnya kemiringan yang menurun ke kanan sesuai rancangan.
+    transformOrigin: '100% 0',
+    transform: `rotate(${geometry.angle}deg)`,
+  };
+};
 
 /**
  * Bidang dasar Skills section beserta label kategorinya.
  *
- * Label dijadikan ANAK dari bidangnya, bukan lapisan terpisah. Dengan begitu
- * rotasinya diwarisi begitu saja — sudut bidang dan sudut teks tidak mungkin
- * menyimpang, karena memang hanya ada satu angka. Bila keduanya dipisah, `angle`
- * harus ditulis dua kali, dan dua sumber kebenaran untuk satu hubungan visual
- * pasti akan lepas sinkron begitu salah satunya disetel.
+ * BIDANGNYA DIAM, LABELNYA YANG BERJALAN. Ketiga bidang merah tidak pernah
+ * bergerak maupun berganti warna — sudut, jarak, dan tumpukannya persis seperti
+ * yang sudah dikunci. Yang berpindah saat panah ditekan hanyalah nama kategori,
+ * yang meluncur menyusuri busur dari slot satu ke slot tetangganya sambil
+ * berganti warna dan peredupan.
  *
- * Perbedaan mendasar antara kedua keadaan bukan warna, melainkan ARAH: keadaan
- * tertutup sepenuhnya diagonal dan tidak punya satu pun garis mendatar, sedangkan
- * keadaan terbuka justru dibelah garis mendatar tegas.
+ * Karena itu label dirender sebagai LAPISAN TERSENDIRI di atas ketiga bidang,
+ * bukan sebagai anak dari bidangnya. Sesuatu yang berpindah antarbidang tidak
+ * bisa menjadi milik salah satu bidang — menjadikannya anak berarti ia harus
+ * dilepas dari satu induk dan dipasang ke induk lain di tengah gerakan, dan
+ * elemen yang dipasang ulang kehilangan transisinya.
  *
- * CATATAN AKSESIBILITAS: seluruh lapisan ini masih ditandai aria-hidden karena
- * belum ada interaksi. Saat panah dan klik dipasang nanti, label harus pindah ke
- * dalam elemen <button> agar namanya terbaca pembaca layar — jangan biarkan nama
- * kategori selamanya tinggal di lapisan dekoratif.
+ * Tiap label adalah <button>: yang di tengah membuka rinciannya, yang di atas
+ * dan di bawah memilih dirinya sendiri. Klik pada tetangga karena itu berlaku
+ * sebagai "naik satu" atau "turun satu" tanpa perlu satu pun panah — panahnya
+ * tetap disediakan, tetapi sebagai pelengkap, bukan sebagai satu-satunya jalan.
  */
-export const SkillsField = memo(function SkillsField({ state, slots }: SkillsFieldProps) {
+export const SkillsField = memo(function SkillsField({
+  state,
+  sheets,
+  isOpen = false,
+  onSelect,
+  onOpen,
+  activeButtonRef,
+}: SkillsFieldProps) {
   if (state === 'open') {
     // Hanya bidang PUTIH yang digambar di sini. Bidang merahnya dipisah menjadi
     // OpenRedBand di bawah, supaya ada tempat untuk menyisipkan elemen di antara
-    // keduanya — watermark harus berada di atas putih tetapi di bawah merah,
-    // dan itu mustahil bila keduanya satu elemen gradasi.
+    // keduanya — watermark harus berada di atas putih tetapi di bawah merah.
     return <div aria-hidden className="absolute inset-0" style={{ backgroundColor: SKILLS.white }} />;
   }
 
   return (
-    <div
-      aria-hidden
-      className="absolute inset-0 overflow-hidden"
-      style={{ backgroundColor: SKILLS.white }}
-    >
-      {/* Jangkar tak berdimensi yang menandai titik hilang. Ketiga bidang menjadi
-          anaknya dan berputar pada poros yang sama, sehingga memindahkan titik
-          hilang cukup dengan mengubah satu konstanta. */}
-      <div className="absolute h-0 w-0" style={VANISHING_POINT}>
-        {FAN_SHAPES.map((shape, index) => (
+    // TIDAK lagi aria-hidden: lapisan ini kini memuat tombol kategori yang
+    // sungguhan. Yang disembunyikan dari pembaca layar hanya bidang merahnya,
+    // yang memang murni hiasan.
+    <div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: SKILLS.white }}>
+      {/* Perputaran saat membuka dipasang di JANGKARNYA, bukan di tiap bidang.
+          Jangkar ini berukuran nol, sehingga transform-origin bawaannya jatuh
+          tepat pada titik hilang — poros yang sama dengan poros susunan
+          kipasnya. Bidang dan label karena itu berputar sebagai satu benda. */}
+      <div
+        className="absolute h-0 w-0"
+        style={{
+          ...VANISHING_POINT,
+          transform: `rotate(${isOpen ? FAN_TURN_DEG : 0}deg)`,
+          transition: transition('transform', MOTION.fan, isOpen),
+        }}
+      >
+        {/* Lapisan 1 — ketiga bidang merah. Diam sepenuhnya, murni hiasan. */}
+        {VISIBLE_SLOTS.map((slot) => (
           <div
-            key={shape.angle}
+            key={slot}
+            aria-hidden
             className="absolute right-0"
             style={{
-              top: `${shape.offset}vh`,
-              // Lebar berlebih memastikan bidang tetap melintasi seluruh layar
-              // pada sudut mana pun; sisanya terpotong oleh overflow induknya.
-              width: '260vw',
-              height: `${shape.thickness}vh`,
-              backgroundColor: shape.color,
-              // Poros berada di ujung KANAN bidang, tepat pada titik hilang.
-              // Rotasi positif (searah jarum jam) menurunkan ujung kirinya, dan
-              // karena bidang memanjang jauh ke kiri, hasilnya adalah kemiringan
-              // yang menurun ke kanan sesuai rancangan.
-              transformOrigin: '100% 0',
-              transform: `rotate(${shape.angle}deg)`,
+              ...slotFrameStyle(slot),
+              backgroundColor: SLOT_GEOMETRY[slot].color,
             }}
-          >
-            {slots && (
-              /* Yang ditambatkan adalah TEPI KIRI label, bukan tepi kanannya.
-                 Kalau memakai `right`, teks tumbuh ke kiri dari titik tambatan,
-                 sehingga letak tampaknya ikut bergantung pada panjang katanya —
-                 "FRONTEND" akan terdorong jauh lebih ke kiri daripada "DESIGN"
-                 meski angkanya sama. Dengan menambatkan tepi kiri, teks selalu
-                 mulai di titik yang sama dan tumbuh ke kanan, berapa pun
-                 panjangnya. Kelebihannya dibiarkan terpotong tepi layar. */
-              <div
-                className="absolute"
+          />
+        ))}
+
+        {/* Lapisan 2 — label yang berpindah, di atas seluruh bidang.
+            Kerangkanya tidak berlatar, jadi yang terlihat berjalan hanya
+            teksnya. */}
+        {sheets?.map((sheet) => {
+          const geometry = SLOT_GEOMETRY[sheet.slot];
+          if (!geometry) return null;
+
+          /*
+           * Slot parkiran tidak punya bidang merah, dan nama kategori yang
+           * melayang di atas putih kosong terbaca sebagai cacat, bukan sebagai
+           * bagian rancangan.
+           *
+           * Disembunyikan lewat opacity dan bukan dengan tidak merendernya:
+           * elemen yang tidak dirender tidak bisa berpindah, sehingga label yang
+           * datang akan muncul begitu saja di slot 2 alih-alih meluncur ke sana.
+           * Dengan opacity, ia tetap menempuh jaraknya — hanya saja pudar
+           * sepanjang bagian perjalanan yang tidak beralas.
+           */
+          const hasSheetBeneath = VISIBLE_SLOTS.includes(
+            sheet.slot as (typeof VISIBLE_SLOTS)[number],
+          );
+
+          const isTheActiveOne = sheet.slot === ACTIVE_SLOT;
+
+          /*
+           * Label di parkiran dan seluruh label saat layar rincian terbuka tidak
+           * boleh bisa ditekan maupun dijangkau Tab. Yang tak terlihat tetap
+           * dapat difokus kalau tidak dinyatakan sebaliknya, dan tombol tak
+           * kasatmata yang tiba-tiba menerima Enter adalah cacat aksesibilitas
+           * yang tidak akan pernah terlihat saat mencoba dengan tetikus.
+           */
+          const isInteractive = hasSheetBeneath && !isOpen;
+
+          return (
+            <div
+              key={sheet.id}
+              className="absolute right-0"
+              style={{
+                ...slotFrameStyle(sheet.slot),
+                opacity: hasSheetBeneath ? 1 : 0,
+                transition: SHEET_TRANSITION,
+              }}
+            >
+              {/* Yang ditambatkan adalah TEPI KIRI label. Kalau memakai `right`,
+                  teks tumbuh ke kiri dari titik tambatan sehingga letaknya ikut
+                  bergantung pada panjang katanya — "FRONTEND" akan terdorong
+                  jauh lebih ke kiri daripada "DESIGN" meski angkanya sama.
+
+                  Elemennya <button>, bukan <div> berpendengar klik. Tombol
+                  sungguhan sudah membawa serta hal-hal yang mudah terlupakan
+                  bila dibuat sendiri: dapat dijangkau Tab, menanggapi Enter dan
+                  Spasi, dibacakan sebagai kendali oleh pembaca layar, dan punya
+                  cincin fokus. Kotak sentuhnya sengaja hanya sebesar teksnya —
+                  kerangka di sekelilingnya selebar 260vw dan akan menjadi sasaran
+                  klik raksasa yang menutupi separuh layar. */}
+              <button
+                type="button"
+                ref={isTheActiveOne ? activeButtonRef : undefined}
+                onClick={() => (isTheActiveOne ? onOpen?.() : onSelect?.(sheet.slot - ACTIVE_SLOT))}
+                // Roving tabindex: hanya kategori aktif yang dapat dijangkau Tab.
+                // Tanpa ini, Tab harus ditekan berkali-kali untuk melewati satu
+                // daftar — dan daftar ini justru dijelajahi dengan panah.
+                tabIndex={isInteractive && isTheActiveOne ? 0 : -1}
+                aria-hidden={!isInteractive}
+                disabled={!isInteractive}
+                aria-label={
+                  isTheActiveOne ? `Buka rincian ${sheet.label}` : `Pilih ${sheet.label}`
+                }
+                className="group absolute block cursor-pointer"
                 style={{
-                  // labelStart tetap ditulis dalam vw pada FAN_SHAPES; yang
-                  // berubah hanya satuan yang dikeluarkan, bukan angkanya.
-                  right: vw(shape.labelStart),
-                  top: `${shape.labelTop}vh`,
+                  right: vw(geometry.labelStart),
+                  top: `${LABEL_TOP}vh`,
+                  transition: SHEET_TRANSITION,
                 }}
               >
-                <CategoryLabel
-                  text={slots[index].label}
-                  letters={slots[index].letters}
-                  isActive={index === ACTIVE_SLOT}
-                  size={shape.labelSize}
-                  // Warna bidang diteruskan, bukan ditulis ulang di data huruf.
-                  // Huruf ber-invert memakainya sebagai warna teks agar tampak
-                  // dilubangi, dan dengan meneruskannya dari sini warnanya tidak
-                  // mungkin tertinggal saat warna bidang diubah.
-                  surfaceColor={shape.color}
-                />
-              </div>
-            )}
-          </div>
-        ))}
+                {/* Sentuhan kecil saat disentuh tetikus: label bergeser sedikit
+                    menyusuri bidangnya, ke arah yang sama dengan arah geraknya
+                    saat berpindah slot. Isyaratnya karena itu terbaca sebagai
+                    "benda ini bisa digerakkan", bukan sekadar sebagai kilau. */}
+                <span className="block transition-transform duration-200 ease-out group-hover:-translate-x-[0.6vh]">
+                  <CategoryLabel
+                    text={sheet.label}
+                    letters={sheet.letters}
+                    isActive={isTheActiveOne}
+                    size={LABEL_SIZE}
+                    // Warna bidang yang SEDANG ditempati, bukan warna tetap dari
+                    // data huruf. Huruf ber-invert memakainya sebagai warna teks
+                    // agar tampak dilubangi, jadi nilainya harus ikut berpindah
+                    // bersama labelnya.
+                    surfaceColor={geometry.color}
+                  />
+                </span>
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -202,9 +258,6 @@ export const SkillsField = memo(function SkillsField({ state, slots }: SkillsFie
  * Dipisahkan dari bidang putih supaya urutan tumpuknya bisa diatur: apa pun yang
  * dirender di antara keduanya akan tertutup rapi oleh merah ini pada batas
  * putih-merah, tanpa perlu clip-path maupun mask.
- *
- * Batas atasnya membaca OPEN_SPLIT_PERCENT yang sama dengan bidang putihnya,
- * sehingga keduanya tidak mungkin bergeser sendiri-sendiri.
  */
 export const OpenRedBand = memo(function OpenRedBand() {
   return (

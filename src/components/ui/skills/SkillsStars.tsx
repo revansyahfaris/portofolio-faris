@@ -6,7 +6,16 @@ import { SKILLS } from './palette';
 import { rigid, withDrift } from './units';
 
 interface SkillsStarsProps {
-  readonly state: 'closed' | 'open';
+  /**
+   * Lapisan mana yang dirender.
+   *
+   * - "buried"     : bintang yang hanya milik keadaan tertutup. Dirender SEBELUM
+   *                  OpenPanel, sehingga tertimbun saat bidang merah naik.
+   * - "persistent" : bintang yang letaknya sama persis di kedua keadaan.
+   *                  Dirender SESUDAH OpenPanel dan tidak pernah dianimasikan —
+   *                  sebagaimana wordmark "Skills" yang juga diam di tempat.
+   */
+  readonly layer: 'buried' | 'persistent';
 }
 
 interface StarPlacement {
@@ -45,7 +54,14 @@ interface StarPlacement {
 const LEFT_STAR_RISE = -0.3;
 const TOP_GROUP_SHIFT = 0.95;
 
-const CLOSED_STARS: readonly StarPlacement[] = [
+/**
+ * Bintang yang hanya hidup di keadaan tertutup.
+ *
+ * Kelompok kanan bawah sengaja TIDAK ada di sini melainkan di PERSISTENT_STARS,
+ * karena letaknya sama persis di kedua keadaan. Menganimasikan sesuatu yang
+ * berpindah ke tempat yang sama hanya menghasilkan kedipan tanpa maksud.
+ */
+const BURIED_STARS: readonly StarPlacement[] = [
   // Bintang kiri tengah
   { top: '18vh', left: '-9vw', size: 36, rotate: 28, blend: 'normal', baseOffsetX: -8, baseOffsetY: 2, driftY: LEFT_STAR_RISE },
 
@@ -75,8 +91,18 @@ const CLOSED_STARS: readonly StarPlacement[] = [
 
   { bottom: '-6vh', left: '8vw', size: 28, rotate: 28, blend: 'difference' },
   { bottom: '-6vh', left: '8vw', size: 28, rotate: 28, blend: 'multiply', invert: true, },
+];
 
-  // Grup bintang kanan bawah
+/**
+ * Grup bintang kanan bawah — letaknya sama di keadaan tertutup maupun terbuka.
+ *
+ * Dirender satu kali saja di atas OpenPanel, tanpa transisi apa pun. Yang
+ * berubah cukup APA YANG ADA DI BELAKANGNYA: saat tertutup bintang-bintang ini
+ * membaur dengan kipas, saat terbuka dengan bidang merah. Pembauran itu terjadi
+ * sendirinya karena mix-blend-mode selalu membaca lapisan di bawahnya, jadi
+ * tidak ada satu pun animasi yang perlu ditulis untuk menghasilkannya.
+ */
+const PERSISTENT_STARS: readonly StarPlacement[] = [
   { bottom: '8vh', right: '10vw', size: 38, rotate: 24, blend: 'multiply', invert: true, baseOffsetX: -8, baseOffsetY: 1 },
 
   { bottom: '-32vh', right: '-24vw', size: 90, rotate: 115, blend: 'difference', baseOffsetX: 0, baseOffsetY: 7 },
@@ -84,14 +110,6 @@ const CLOSED_STARS: readonly StarPlacement[] = [
 
   { bottom: '8vh', right: '10vw', size: 38, rotate: 24, blend: 'difference', baseOffsetX: -8, baseOffsetY: 1 },
   { bottom: '8vh', right: '10vw', size: 38, rotate: 24, blend: 'multiply', invert: true, },
-];
-
-const OPEN_STARS: readonly StarPlacement[] = [
-  { bottom: '-32vh', right: '-24vw', size: 90, rotate: 115, blend: 'difference', baseOffsetX: 0, baseOffsetY: 7 },
-  { bottom: '-32vh', right: '-24vw', size: 90, rotate: 115, blend: 'multiply', invert: true, baseOffsetX: 0, baseOffsetY: 7 },
-
-  { bottom: '8vh', right: '10vw', size: 38, rotate: 24, blend: 'difference', baseOffsetX: -8, baseOffsetY: 1 },
-  { bottom: '8vh', right: '10vw', size: 38, rotate: 24, blend: 'multiply', invert: true, baseOffsetX: -8, baseOffsetY: 1 },
 ];
 
 /** Point bintang kustom milikmu */
@@ -107,8 +125,8 @@ const INNER_RINGS = [
   { scale: 0.2, color: SKILLS.starA },
 ];
 
-export const SkillsStars = memo(function SkillsStars({ state }: SkillsStarsProps) {
-  const stars = state === 'closed' ? CLOSED_STARS : OPEN_STARS;
+export const SkillsStars = memo(function SkillsStars({ layer }: SkillsStarsProps) {
+  const stars = layer === 'buried' ? BURIED_STARS : PERSISTENT_STARS;
 
   // 📍 FIX: Pisahkan daftar bintang tanpa ada yang tumpang tindih
   const standaloneStars = stars.filter((s) => s.blend === 'luminosity' || s.blend === 'normal');

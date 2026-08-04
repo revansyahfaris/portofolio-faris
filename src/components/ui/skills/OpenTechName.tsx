@@ -1,10 +1,13 @@
 import { memo } from 'react';
 import { SKILLS } from './palette';
+import { MOTION, TECH_DIP_VH, transition } from './motion';
 import { OPEN_SPLIT_PERCENT } from './SkillsField';
 
 interface OpenTechNameProps {
   /** Nama teknologi yang sedang ditampilkan, mis. "Next.js". */
   readonly name: string;
+  /** Sedang menukik turun untuk digantikan teknologi berikutnya. */
+  readonly swapping: boolean;
 }
 
 /**
@@ -49,7 +52,10 @@ const PLACEMENT = {
  * kelak dipakai di tempat lain — pembaca layar, judul halaman, atau meta tag —
  * yang tidak menginginkan huruf besar semua.
  */
-export const OpenTechName = memo(function OpenTechName({ name }: OpenTechNameProps) {
+export const OpenTechName = memo(function OpenTechName({
+  name,
+  swapping,
+}: OpenTechNameProps) {
   return (
     <div
       className="pointer-events-none absolute"
@@ -58,14 +64,33 @@ export const OpenTechName = memo(function OpenTechName({ name }: OpenTechNamePro
         left: PLACEMENT.left,
       }}
     >
+      {/* Pembungkus terpisah khusus gerak pergantian.
+       *
+       * Wajib elemen tersendiri, bukan digabung ke pembungkus penempatan di
+       * atasnya: penempatan memakai bottom dan left, sedangkan gerak ini memakai
+       * transform. Menggabungkannya berarti satu properti transform harus
+       * melayani dua urusan yang berubah pada waktu berbeda, dan yang belakangan
+       * ditulis akan menghapus yang lain tanpa peringatan. */}
       <span
-        className="block whitespace-nowrap font-serif font-bold uppercase leading-none"
+        className="block"
         style={{
-          fontSize: `${PLACEMENT.size}vh`,
-          color: SKILLS.redBright,
+          transform: swapping ? `translateY(${TECH_DIP_VH}vh)` : 'translateY(0)',
+          opacity: swapping ? 0 : 1,
+          transition: [
+            transition('transform', MOTION.techSwap, !swapping),
+            transition('opacity', MOTION.techSwap, !swapping),
+          ].join(', '),
         }}
       >
-        {name}
+        <span
+          className="block whitespace-nowrap font-serif font-bold uppercase leading-none"
+          style={{
+            fontSize: `${PLACEMENT.size}vh`,
+            color: SKILLS.redBright,
+          }}
+        >
+          {name}
+        </span>
       </span>
     </div>
   );

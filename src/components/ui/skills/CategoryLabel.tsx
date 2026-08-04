@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { SKILLS } from './palette';
+import { LABEL_TINT_TRANSITION, SHEET_TRANSITION } from './motion';
 import type { LetterSpec } from './types';
 
 interface CategoryLabelProps {
@@ -35,6 +36,12 @@ export const CategoryLabel = memo(function CategoryLabel({
         fontSize: `${size}vh`,
         color: inkColor,
         opacity: isActive ? 1 : 0.5,
+        // Warna dan peredupan ikut ditransisikan karena keduanya berubah saat
+        // lembar berpindah slot: yang masuk ke tengah menyala menjadi putih
+        // penuh, yang keluar meredup menjadi hitam separuh. Tanpa transisi,
+        // pergantiannya berkedip di tengah gerakan dan mematahkan kesan bahwa
+        // teks itu terbawa oleh bidangnya.
+        transition: LABEL_TINT_TRANSITION,
       }}
     >
       {specs.map((spec, index) => {
@@ -60,6 +67,12 @@ export const CategoryLabel = memo(function CategoryLabel({
               transform: `translate(${x}em, ${y}em) rotate(${r}deg) scale(${s})`,
               marginRight: gap ? `${gap}em` : undefined,
               color: !invert ? inkColor : undefined,
+              // Warna ditetapkan ulang di tingkat huruf, jadi transisinya juga
+              // harus ada di sini. Tanpa ini, warna yang diwarisi dari induk
+              // memang melebur tetapi langsung ditimpa nilai huruf yang berganti
+              // seketika — dan yang terlihat adalah kotak yang melebur berdampingan
+              // dengan huruf yang berkedip.
+              transition: LABEL_TINT_TRANSITION,
             }}
           >
             {/* 📍 KOTAK BACKGROUND (Mengatur ukuran, rotasi, & skew secara terisolasi) */}
@@ -68,6 +81,7 @@ export const CategoryLabel = memo(function CategoryLabel({
                 className="absolute -z-10 block pointer-events-none"
                 style={{
                   backgroundColor: inkColor,
+                  transition: SHEET_TRANSITION,
                   transform: `rotate(${boxR}deg) skewX(${skew}deg)`,
                   transformOrigin: 'center',
                   // Menggunakan offset em langsung ke atribut top/bottom/left/right
@@ -84,6 +98,7 @@ export const CategoryLabel = memo(function CategoryLabel({
               className="relative z-10"
               style={{
                 color: invert ? surfaceColor : undefined,
+                transition: LABEL_TINT_TRANSITION,
               }}
             >
               {c === ' ' ? '\u00A0' : c}
