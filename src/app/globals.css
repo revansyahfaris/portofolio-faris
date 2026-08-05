@@ -37,36 +37,9 @@
   --font-serif: Georgia, var(--font-gelasio, "Gelasio"), "Times New Roman", serif;
 }
 
-/* ============================================================
-   LENIS BASE STYLES (di-inline dari node_modules/lenis/dist/lenis.css
-   biar gak jadi request CSS terpisah yang render-blocking)
-   ============================================================ */
-html.lenis,
-html.lenis body {
-  height: auto;
-}
-
-.lenis:not(.lenis-autoToggle).lenis-stopped {
-  overflow: clip;
-}
-
-.lenis [data-lenis-prevent],
-.lenis [data-lenis-prevent-wheel],
-.lenis [data-lenis-prevent-touch],
-.lenis [data-lenis-prevent-vertical],
-.lenis [data-lenis-prevent-horizontal] {
-  overscroll-behavior: contain;
-}
-
-.lenis.lenis-smooth iframe {
-  pointer-events: none;
-}
-
-.lenis.lenis-autoToggle {
-  transition-property: overflow;
-  transition-duration: 1ms;
-  transition-behavior: allow-discrete;
-}
+/* Gaya dasar Lenis dihapus bersama pustakanya. Perpindahan antar section kini
+   sepenuhnya ditangani scroll-snap milik browser; lihat scroll-snap-type di
+   bawah. */
 
 @layer base {
   html {
@@ -77,12 +50,27 @@ html.lenis body {
     background-color: #06100D;
     color: #F2F7F4;
     font-family: inherit;
-    scroll-behavior: smooth;
-    /* Snap native CSS (bukan JS) untuk section di luar Hero<->Profile, yang
-       transisinya sudah punya logic snap kustom sendiri lewat Lenis di
-       HeroSection.tsx. "proximity" dipilih (bukan "mandatory") supaya tidak
-       memaksa snap saat konten section lebih tinggi dari viewport. */
-    scroll-snap-type: y proximity;
+    /* scroll-behavior SENGAJA TIDAK diset smooth.
+       Gulir yang digerakkan tangan sendiri tidak perlu diperantarai apa pun —
+       jari sudah mengendalikannya langsung, dan menambahkan animasi di atasnya
+       hanya membuat gerakannya terasa tertinggal. Gulir yang DIMINTA lewat menu
+       tetap dianimasikan, tetapi diminta satu per satu lewat scrollIntoView. */
+
+    /*
+     * SATU-SATUNYA pengendali perpindahan antar section.
+     *
+     * "mandatory", bukan "proximity". Setiap section berukuran tepat satu layar
+     * penuh dan isinya dipotong bila melebihi, jadi tidak ada satu pun yang
+     * perlu dikecualikan — dan "proximity" menyerahkan keputusan menyentak atau
+     * tidak kepada heuristik browser, sehingga kadang menyentak dan kadang
+     * tidak. Ketidaktentuan itu justru yang membuat gulirnya terasa rusak,
+     * bukan bebas.
+     *
+     * Berjalan di luar main thread, tanpa satu baris JavaScript pun. Pustaka
+     * gulir halus yang dulu dipasang bersamaan dengan ini justru menonaktifkan
+     * snap bawaan, lalu membangunnya kembali dengan JavaScript.
+     */
+    scroll-snap-type: y mandatory;
   }
 
   body {
@@ -247,19 +235,10 @@ html[data-freeze-idle-sections] section:not(#hero):not(#profile):not(#skills) *:
   scrollbar-color: #27272a #09090b;
 } */
 
-/* ============================================================
-   OVERRIDE UNTUK LENIS STOPPED (Mencegah Scrollbar Menghilang)
-   ============================================================ */
+/* Batang gulir dijaga selalu tampil sejak layar pertama. Kalau ia baru muncul
+   setelah halaman cukup panjang, lebar viewport berubah pada saat itu juga dan
+   seluruh tata letak bergeser beberapa piksel. */
 html,
-body,
-html.lenis-stopped,
-body.lenis-stopped,
-.lenis.lenis-stopped {
-  overflow-y: scroll !important;
-}
-
-html.lenis-stopped::-webkit-scrollbar,
-body.lenis-stopped::-webkit-scrollbar {
-  display: block !important;
-  width: 8px !important;
+body {
+  overflow-y: scroll;
 }

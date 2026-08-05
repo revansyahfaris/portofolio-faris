@@ -7,8 +7,9 @@
  * Berisi:
  * - Menu navigasi utama berbentuk daftar label yang bisa dipilih lewat scroll wheel.
  * - Artwork/gambar hero dengan efek fade di tepi kiri dan bawah.
- * - Integrasi dengan Lenis untuk mengunci scroll selama navigasi menu berlangsung,
- *   dan untuk snap otomatis ke section Profile setelah menu selesai dijelajahi.
+ * - Penguncian gulir selama menu masih dijelajahi, lewat pembatalan peristiwa
+ *   roda tetikus. Perpindahan antar section diserahkan sepenuhnya kepada
+ *   scroll-snap milik browser.
  */
 
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
@@ -17,13 +18,6 @@ import { ArrowRight } from 'lucide-react';
 import { portofolioConfig } from '../../config/portofolioConfig';
 import Image from 'next/image';
 import StarsBackground from './StarsBackground';
-import type Lenis from 'lenis';
-
-declare global {
-  interface Window {
-    __lenis?: Lenis;
-  }
-}
 
 /* ============================================================
    TIPE DATA & KONSTANTA
@@ -402,9 +396,8 @@ const QuickScrollButton = memo(function QuickScrollButton({ onClick }: QuickScro
 /**
  * Komponen utama Hero section. Bertanggung jawab atas:
  * - State menu (index yang dipilih) dan navigasinya lewat scroll wheel maupun klik.
- * - Sinkronisasi dengan instance Lenis global (window.__lenis) untuk mengunci scroll
- *   selagi menu masih dijelajahi, dan melepas kunci saat sudah selesai.
- * - Snap otomatis ke section Profile setelah pengguna mencapai menu terakhir.
+ * - Penguncian gulir selagi menu masih dijelajahi, dengan membatalkan peristiwa
+ *   roda tetikus; kuncinya lepas sendiri begitu menu terakhir tercapai.
  */
 export default function HeroSection() {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -446,16 +439,21 @@ export default function HeroSection() {
     return () => observer.disconnect();
   }, []);
 
-  // Mengubah gesture scroll wheel menjadi navigasi menu selama masih berada di
-  // bagian atas halaman. Lenis dihentikan sementara (lenis.stop()) supaya wheel
-  // event dipakai penuh untuk berpindah antar menu, bukan menggerakkan scroll halaman.
+  /*
+   * Mengubah gesture roda tetikus menjadi navigasi menu selama masih di puncak
+   * halaman.
+   *
+   * Penguncian gulirnya cukup dengan e.preventDefault() pada pendengar yang
+   * TIDAK pasif. Dulu ini perlu memanggil lenis.stop() lebih dulu, bukan karena
+   * preventDefault kurang, melainkan karena Lenis membaca peristiwa roda secara
+   * terpisah dan tetap menggerakkan halaman meski peristiwanya sudah dibatalkan.
+   * Tanpa Lenis, satu pembatalan sudah cukup.
+   */
   useEffect(() => {
     let lastStepTime = 0;
 
     const handleWheel = (e: WheelEvent) => {
-      const lenis = window.__lenis;
       const isAtTop = window.scrollY <= 10;
-
       if (!isAtTop) return;
 
       const current = selectedIndexRef.current;
@@ -464,11 +462,9 @@ export default function HeroSection() {
       const isScrollingUp = e.deltaY < 0;
 
       const isNavigatingMenu =
-        (isScrollingDown && current < maxIndex) ||
-        (isScrollingUp && current > 0);
+        (isScrollingDown && current < maxIndex) || (isScrollingUp && current > 0);
 
       if (isNavigatingMenu) {
-        if (lenis) lenis.stop();
         e.preventDefault();
 
         if (Math.abs(e.deltaY) < 20) return;
@@ -485,108 +481,28 @@ export default function HeroSection() {
         return;
       }
 
-      // Jika pengguna sudah berada di menu terakhir dan tetap scroll ke bawah,
-      // lepas kunci Lenis dan lanjutkan scroll otomatis menuju section Profile.
-      if (isScrollingDown && current === maxIndex) {
-        if (lenis) {
-          lenis.start();
-          const profileEl = document.getElementById('profile');
-          if (profileEl) {
-            lenis.scrollTo(profileEl, { duration: 1.2 });
-          }
-        }
-      }
-    };
-
-    const handleScrollCheck = () => {
-      const lenis = window.__lenis;
-      if (window.scrollY > 5 && lenis) {
-        lenis.start();
-      }
+      // Sudah di menu terakhir dan tetap menggulir ke bawah: lepaskan, dan
+      // biarkan gulir berjalan wajar. scroll-snap milik browser yang akan
+      // mendaratkannya di Profile — tidak perlu digulirkan secara paksa.
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });
-    window.addEventListener('scroll', handleScrollCheck, { passive: true });
-
-    return () => {
-      window.removeEventListener('wheel', handleWheel);
-      window.removeEventListener('scroll', handleScrollCheck);
-    };
+    return () => window.removeEventListener('wheel', handleWheel);
   }, []);
 
-  // Menangani snap otomatis antara section Hero dan Profile berdasarkan
-  // kecepatan scroll (flick) maupun posisi akhir scroll (scrollend).
-  useEffect(() => {
-    let isSnapping = false;
-    let rafId: number | null = null;
-    let lenisInstance: NonNullable<typeof window.__lenis> | null = null;
-
-    const SNAP_THRESHOLD = 0.5;
-    const FLICK_VELOCITY = 0.4; // px/ms — flick kencang: snap instan, gak usah nunggu scrollend
-
-    const triggerSnap = (goToProfile: boolean) => {
-      if (!lenisInstance) return;
-      const profileEl = document.getElementById('profile');
-      const heroEl = document.getElementById('hero');
-      const target = goToProfile ? profileEl : heroEl;
-      if (!target) return;
-
-      isSnapping = true;
-      lenisInstance.scrollTo(target, {
-        duration: 0.6,
-        lock: true,
-        onComplete: () => {
-          isSnapping = false;
-        },
-      });
-    };
-
-    const isInZone = () => {
-      const currentScrollY = window.scrollY;
-      const heroHeight = window.innerHeight;
-      return currentScrollY > heroHeight * 0.02 && currentScrollY < heroHeight * 0.98;
-    };
-
-    // Jalur cepat: kalau kecepatan scroll (flick) sudah melewati ambang batas,
-    // langsung snap ke arah gerakan tanpa menunggu scroll benar-benar berhenti.
-    const handleLenisScroll = ({ velocity }: { velocity: number }) => {
-      if (isSnapping) return;
-      if (!isInZone()) return;
-      if (Math.abs(velocity) > FLICK_VELOCITY) {
-        triggerSnap(velocity > 0);
-      }
-    };
-
-    // Jalur utama: event "scrollend" menandakan browser sudah benar-benar selesai
-    // memproses scroll (termasuk sisa momentum/inertia), sehingga lebih akurat
-    // dibanding menebak dari kecepatan saja.
-    const handleScrollEnd = () => {
-      if (isSnapping) return;
-      if (!isInZone()) return;
-
-      const heroHeight = window.innerHeight;
-      triggerSnap(window.scrollY > heroHeight * SNAP_THRESHOLD);
-    };
-
-    const waitForLenis = () => {
-      const lenis = window.__lenis;
-      if (lenis) {
-        lenisInstance = lenis;
-        lenis.on('scroll', handleLenisScroll);
-        window.addEventListener('scrollend', handleScrollEnd);
-        return;
-      }
-      rafId = requestAnimationFrame(waitForLenis);
-    };
-
-    waitForLenis();
-
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      window.removeEventListener('scrollend', handleScrollEnd);
-      if (lenisInstance) lenisInstance.off('scroll', handleLenisScroll);
-    };
-  }, []);
+  /*
+   * Snap Hero <-> Profile DIHAPUS, bukan dipindahkan.
+   *
+   * Seluruh mesin di sini — ambang kecepatan flick, pendengar scrollend,
+   * penjaga isSnapping, penantian sampai Lenis terpasang — ada semata karena
+   * Lenis mematikan scroll-snap bawaan browser. Begitu Lenis dicabut,
+   * scroll-snap-type di globals.css mengerjakan hal yang sama persis, di luar
+   * main thread, tanpa satu baris JavaScript pun.
+   *
+   * Setiap section berukuran tepat satu layar penuh, jadi tidak ada yang perlu
+   * dikecualikan. Ini juga sekaligus menghapus sumber sengketa: dua pengendali
+   * gulir yang menulis ke posisi yang sama.
+   */
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -612,12 +528,26 @@ export default function HeroSection() {
     };
   }, []);
 
-  const scrollToNextSection = useCallback(() => {
-    const nextSection = document.getElementById('profile');
-    if (nextSection) {
-      nextSection.scrollIntoView({ behavior: 'smooth' });
-    }
+  /**
+   * Menggulir ke sebuah section.
+   *
+   * Kembali memakai scrollIntoView bawaan browser. Ini bisa dipakai lagi justru
+   * karena Lenis sudah tidak ada: dulu keduanya menulis ke posisi gulir yang
+   * sama pada frame yang sama dan saling menimpa, sehingga geraknya tersendat
+   * atau berhenti di tengah jalan.
+   *
+   * behavior 'smooth' tetap dipakai meski gulir halus tidak lagi dipasang di
+   * seluruh halaman. Bedanya disengaja: gulir yang DIMINTA lewat menu memang
+   * pantas dianimasikan supaya pengguna melihat ke mana ia dibawa, sedangkan
+   * gulir yang digerakkan tangan sendiri tidak perlu diperantarai apa pun.
+   */
+  const scrollToSection = useCallback((targetId: string) => {
+    document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+
+  const scrollToNextSection = useCallback(() => {
+    scrollToSection('profile');
+  }, [scrollToSection]);
 
   /**
    * Membawa pengguna ke section Connect.
@@ -627,8 +557,8 @@ export default function HeroSection() {
    * langsung, jadi tujuan tombolnya tetap sama — hanya jalurnya yang kini nyata.
    */
   const scrollToContact = useCallback(() => {
-    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+    scrollToSection('contact');
+  }, [scrollToSection]);
 
   const handleMenuSelect = useCallback((_targetId: string, index: number) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
@@ -638,14 +568,14 @@ export default function HeroSection() {
     });
   }, []);
 
-  const handleMenuClick = useCallback((targetId: string, index: number) => {
-    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    setSelectedIndex(index);
-    const element = document.getElementById(targetId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, []);
+  const handleMenuClick = useCallback(
+    (targetId: string, index: number) => {
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+      setSelectedIndex(index);
+      scrollToSection(targetId);
+    },
+    [scrollToSection],
+  );
 
   return (
     <section id="hero" ref={rootRef} className={ROOT_CLASSNAME}>

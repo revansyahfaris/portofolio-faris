@@ -52,7 +52,20 @@ export function SectionShell({ id, className = '', children }: SectionShellProps
       className={`relative h-[100dvh] w-full overflow-hidden font-sans ${className}`}
       style={{
         contentVisibility: 'auto',
-        containIntrinsicSize: '100vh',
+        /*
+         * WAJIB memakai satuan yang SAMA dengan tinggi sebenarnya di atas
+         * (100dvh), bukan 100vh.
+         *
+         * Nilai ini adalah tinggi yang DIPURA-PURAKAN browser selama isi section
+         * dilewati. Begitu section mendekat dan isinya benar-benar dirender,
+         * tingginya berganti menjadi tinggi yang sesungguhnya. Bila keduanya
+         * berbeda — dan di peramban seluler dvh lebih pendek daripada vh selama
+         * bilah alamatnya tampil — panjang halaman berubah tepat saat digulir,
+         * dan posisi gulir ikut bergeser sendiri. Yang terlihat adalah section
+         * yang tersentak: bagian atasnya terisap dan isinya seolah muncul dari
+         * tempat lain.
+         */
+        containIntrinsicSize: '100dvh',
         scrollSnapAlign: 'start',
       }}
     >

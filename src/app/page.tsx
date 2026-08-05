@@ -8,7 +8,6 @@ import CompanySection from '@/components/ui/CompanySection';
 import GithubSection from '@/components/ui/GithubSection';
 import QuestSection from '@/components/ui/QuestSection';
 import ConnectSection from '@/components/ui/ConnectSection';
-import SmoothScroll from '@/components/ui/SmoothScroll';
 
 /**
  * Halaman utama portofolio.
@@ -42,21 +41,19 @@ import SmoothScroll from '@/components/ui/SmoothScroll';
  */
 export default function Home() {
   return (
-    <SmoothScroll>
-      <main className="relative bg-[#06100D] text-[#F2F7F4] min-h-screen overflow-x-hidden">
-        {/* Konten kritis yang harus langsung terlihat (above-the-fold) */}
-        <HeroSection />
+    <main className="relative bg-[#06100D] text-[#F2F7F4] min-h-screen overflow-x-hidden">
+      {/* Konten kritis yang harus langsung terlihat (above-the-fold) */}
+      <HeroSection />
 
-        <ProfileSection />
-        <SkillsSection />
-        <ExperienceSection />
-        <AchievementSection />
-        <AcademySection />
-        <CompanySection />
-        <GithubSection />
-        <QuestSection />
-        <ConnectSection />
-      </main>
-    </SmoothScroll>
+      <ProfileSection />
+      <SkillsSection />
+      <ExperienceSection />
+      <AchievementSection />
+      <AcademySection />
+      <CompanySection />
+      <GithubSection />
+      <QuestSection />
+      <ConnectSection />
+    </main>
   );
 }
