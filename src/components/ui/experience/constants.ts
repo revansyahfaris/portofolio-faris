@@ -24,6 +24,7 @@ export const EXPERIENCES: readonly ExperienceEntry[] = [
     period: '2022 — Sekarang',
     startISO: '2022-01',
     location: 'Semarang, Indonesia (Remote)',
+    project: 'Creative Studio & Design System',
     summary:
       'Menjalankan studio kreatif yang mengerjakan desain grafis dan perancangan antarmuka web/aplikasi untuk klien lintas industri.',
     responsibilities: [
@@ -47,6 +48,7 @@ export const EXPERIENCES: readonly ExperienceEntry[] = [
     startISO: '2025-07',
     endISO: '2025-08',
     location: 'Semarang, Indonesia',
+    project: 'Chatbot AI-LLM Project',
     summary:
       'Mendukung operasional infrastruktur digital dan pengelolaan alur data pada lingkungan institusi finansial.',
     responsibilities: [
@@ -68,6 +70,7 @@ export const EXPERIENCES: readonly ExperienceEntry[] = [
     period: '2026 — Sekarang',
     startISO: '2026-01',
     location: 'Universitas Diponegoro',
+    project: 'Divisi R&D Departemen Sosial',
     summary:
       'Memimpin divisi R&D: merancang program kerja, mengoordinasi alur kerja tim, dan mengevaluasi hasilnya.',
     responsibilities: [
@@ -89,6 +92,7 @@ export const EXPERIENCES: readonly ExperienceEntry[] = [
     period: '2026 — Sekarang',
     startISO: '2026-01',
     location: 'Universitas Diponegoro',
+    project: 'Embedded Prototype Research',
     summary:
       'Riset dan perancangan purwarupa sistem tertanam: mikrokontroler, integrasi sensor, dan penelusuran masalah perangkat keras.',
     responsibilities: [

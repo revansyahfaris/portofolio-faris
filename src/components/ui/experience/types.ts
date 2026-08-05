@@ -31,6 +31,16 @@ export interface ExperienceEntry {
   /** Format ISO (YYYY-MM) akhir. Dikosongkan jika masih berjalan. */
   endISO?: string;
   location: string;
+  /**
+   * Nama proyek atau fokus kerja, sependek mungkin. Mis. "Chatbot AI-LLM Project".
+   *
+   * Dipisah dari `summary` dan bukan dipotong darinya. Keduanya menjawab
+   * pertanyaan yang berbeda: `project` menjawab "sedang mengerjakan APA",
+   * `summary` menjawab "apa yang dilakukan di sana". Yang pertama muat di satu
+   * baris besar dan langsung terbaca; yang kedua sebuah kalimat utuh yang akan
+   * tampak janggal bila dipaksa masuk ke posisi judul.
+   */
+  project: string;
   /** Ringkasan satu kalimat tentang lingkup tanggung jawab. */
   summary: string;
   /** Rincian tanggung jawab. Ditulis diawali kata kerja, maksimal tiga butir agar tetap terpindai. */
