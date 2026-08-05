@@ -31,10 +31,23 @@ interface SkillsPagerProps {
 const PLACEMENT = {
   closed: {
     arrows: { right: 2, top: 40 },
+    /** Pengali terhadap PLACEMENT.size. */
+    scale: 1,
   },
   open: {
     arrows: { right: 49, top: 45.5 },
-    back: { right: 90, top: 45.5 },
+    back: { right: 110, top: 45.5 },
+    /**
+     * Sengaja lebih kecil daripada gugus keadaan tertutup.
+     *
+     * Di layar daftar, panah itu kendali utama seluruh section — tidak ada hal
+     * lain untuk ditekan. Di layar rincian, yang utama adalah daftar Core Skills
+     * itu sendiri dan panahnya turun pangkat menjadi pelengkap. Perbedaan ukuran
+     * itu yang menyatakan pergantian peran tanpa satu kata pun, sekaligus
+     * menegaskan bahwa keduanya benda yang BERBEDA — bukan satu panah yang
+     * berpindah tempat.
+     */
+    scale: 0.78,
   },
   /** Jarak antar segitiga maju-mundur, dalam vh. */
   gap: 3.5,
@@ -192,7 +205,6 @@ export const SkillsPager = memo(function SkillsPager({
   current,
 }: SkillsPagerProps) {
   const subject = isOpen ? 'teknologi' : 'kategori';
-  const arrows = isOpen ? PLACEMENT.open.arrows : PLACEMENT.closed.arrows;
 
   /*
    * Warna isi mengikuti latar yang ada DI BALIKNYA, dan latar itu berganti
@@ -208,30 +220,70 @@ export const SkillsPager = memo(function SkillsPager({
 
   return (
     <>
-      {/* Maju-mundur. Berpindah tempat antara kedua keadaan, dan perpindahannya
-          ditransisikan supaya terbaca sebagai satu benda yang bergeser — bukan
-          sebagai satu gugus yang lenyap lalu gugus lain yang muncul. */}
+      {/* DUA GUGUS TERPISAH, bukan satu gugus yang berpindah tempat.
+          Sebelumnya keduanya satu elemen dengan `right` yang ditransisikan, dan
+          hasilnya terbaca sebagai panah yang sama meluncur menyeberangi layar —
+          padahal yang dikendalikannya berganti sama sekali, dari kategori
+          menjadi teknologi. Benda yang bergerak menyatakan "aku masih aku";
+          yang perlu dinyatakan di sini justru sebaliknya. */}
+
+      {/* Gugus keadaan tertutup — berpindah kategori. */}
       <div
         className="absolute flex flex-row items-center"
         style={{
-          right: vw(arrows.right),
-          top: `${arrows.top}vh`,
+          right: vw(PLACEMENT.closed.arrows.right),
+          top: `${PLACEMENT.closed.arrows.top}vh`,
           gap: `${PLACEMENT.gap}vh`,
-          transition: transition('right', MOTION.panel, isOpen),
+          opacity: isOpen ? 0 : 1,
+          transition: transition('opacity', MOTION.panel, !isOpen),
+          pointerEvents: isOpen ? 'none' : 'auto',
         }}
+        aria-hidden={isOpen}
+      >
+        <PagerButton
+          label={`Kategori sebelum ${current}`}
+          onClick={onPrev}
+          facing="up"
+          color={color}
+          scale={PLACEMENT.closed.scale}
+          withAccent
+        />
+        <PagerButton
+          label={`Kategori setelah ${current}`}
+          onClick={onNext}
+          facing="down"
+          color={color}
+          scale={PLACEMENT.closed.scale}
+        />
+      </div>
+
+      {/* Gugus keadaan terbuka — berpindah teknologi. */}
+      <div
+        className="absolute flex flex-row items-center"
+        style={{
+          right: vw(PLACEMENT.open.arrows.right),
+          top: `${PLACEMENT.open.arrows.top}vh`,
+          gap: `${PLACEMENT.gap}vh`,
+          opacity: isOpen ? 1 : 0,
+          transition: transition('opacity', MOTION.core, isOpen),
+          pointerEvents: isOpen ? 'auto' : 'none',
+        }}
+        aria-hidden={!isOpen}
       >
         <PagerButton
           label={`${subject} sebelum ${current}`}
           onClick={onPrev}
           facing="up"
           color={color}
-          withAccent  
+          scale={PLACEMENT.open.scale}
+          withAccent
         />
         <PagerButton
           label={`${subject} setelah ${current}`}
           onClick={onNext}
           facing="down"
           color={color}
+          scale={PLACEMENT.open.scale}
         />
       </div>
 
