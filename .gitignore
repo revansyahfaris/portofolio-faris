@@ -41,3 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 *.txt
+
+# artefak perkakas pengembangan — hasil turunan, bukan sumber
+.claude/
+.serena/
+graphify-out/

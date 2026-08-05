@@ -12,15 +12,17 @@
  * "melompat", dan tidak ada cara membedakannya dengan mata selain mengurangi
  * bebannya lalu melihat apakah gejalanya hilang.
  *
- * Setel ke false sebelum rilis. Kalau lupa, yang hilang bukan sekadar hiasan —
- * seluruh gerak masuk di enam section ikut mati.
- */
-export const FREEZE_IDLE_SECTIONS = true;
-
-/**
- * Section yang gerakannya TETAP hidup saat sakelar di atas menyala.
+ * HASIL PENGUKURANNYA: bukan beban mesin. Lompatan yang membuat kami curiga
+ * ternyata berasal dari focus() yang bawaannya menggulirkan elemen ke dalam
+ * pandangan, melawan animasi yang sedang berjalan. Diperbaiki dengan
+ * preventScroll di SkillsSection.
  *
- * Hero dan Profile karena keduanya sudah selesai dan menjadi patokan rasa
- * gerak situs ini; Skills karena itulah yang sedang dikerjakan.
+ * Karena itu sakelar ini dimatikan. Dibiarkan ada karena pertanyaan yang sama
+ * hampir pasti muncul lagi pada section berikutnya, dan membangunnya ulang dari
+ * nol lebih mahal daripada membalik satu boolean.
+ *
+ * Section yang tetap hidup saat sakelar menyala ditentukan di globals.css,
+ * bukan di sini — aturan :not() harus berupa CSS statis dan tidak bisa dirangkai
+ * dari nilai JavaScript.
  */
-export const LIVE_SECTION_IDS = ['hero', 'profile', 'skills'] as const;
+export const FREEZE_IDLE_SECTIONS = false;
