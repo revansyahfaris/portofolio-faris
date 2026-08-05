@@ -14,13 +14,27 @@ import {
   TabContentCard,
   DegreeCard,
   MetricsCard,
+  FlamesToggle,
 } from './profile';
+import { SHOW_FLAME_TOGGLE, FLAMES_ON_BY_DEFAULT } from '@/config/perfFlags';
 import { TABS, DEFAULT_GITHUB_USERNAME, FALLBACK_COMMIT_COUNT } from './profile/constants';
 import type { TabType } from './profile/types';
 import type { GithubCommitSearchResponse } from './profile/types';
 import { useViewportPresence } from '@/hooks/useViewportPresence';
 
 export default function ProfileSection() {
+  /*
+   * SEMENTARA — keadaan lapisan api, untuk pengukuran. Hapus bersama
+   * perfFlags.ts dan FlamesToggle.
+   *
+   * Disimpan di sini dan bukan di komponen apinya sendiri karena yang ingin
+   * diukur adalah pelepasan lapisannya. Kalau apinya sekadar disembunyikan
+   * dengan display:none atau opacity dari dalam, lapisan komposit yang sudah
+   * dialokasikan belum tentu ikut dilepas — yang harus terjadi adalah
+   * elemennya benar-benar tidak dirender.
+   */
+  const [flamesOn, setFlamesOn] = useState(FLAMES_ON_BY_DEFAULT);
+
   const [activeTab, setActiveTab] = useState<TabType>('status');
   const [commitCount, setCommitCount] = useState<number | null>(null);
   const [loadingCommits, setLoadingCommits] = useState<boolean>(true);
@@ -92,11 +106,14 @@ export default function ProfileSection() {
       className="relative min-h-[100dvh] h-[100dvh] w-full bg-zinc-950 text-white overflow-hidden font-sans select-none flex flex-col justify-between p-4 sm:p-6 md:p-10 border-t-2 border-emerald-500/40"
       style={{ 
         contentVisibility: 'auto',
-        containIntrinsicSize: '100vh',
+        // Harus sesatuan dengan h-[100dvh] di atas. Tinggi pura-pura yang
+        // berbeda dari tinggi sebenarnya membuat panjang halaman berubah tepat
+        // saat section ini mulai dirender, dan posisi gulir ikut bergeser.
+        containIntrinsicSize: '100dvh',
       }}
     >
       {/* 1A. Background flame base */}
-      <FlameBackground />
+      {flamesOn && <FlameBackground />}
 
       {/* 1D. Persona-style 3D text banners */}
       <Banner3D />
@@ -105,7 +122,7 @@ export default function ProfileSection() {
       <CharacterPhoto />
 
       {/* 1C. Foreground amber flare */}
-      <FlameFlareForeground />
+      {flamesOn && <FlameFlareForeground />}
 
       {/* 2. Background diagonal watermark */}
       <BackgroundWatermark />
@@ -131,6 +148,11 @@ export default function ProfileSection() {
 
       {/* 5. Footer prompt */}
       <SectionFooter />
+
+      {/* SEMENTARA — alat ukur. Hapus bersama perfFlags.ts. */}
+      {SHOW_FLAME_TOGGLE && (
+        <FlamesToggle enabled={flamesOn} onToggle={() => setFlamesOn((on) => !on)} />
+      )}
 
       {/* Keyframe animations & GPU Optimizations */}
       <style jsx global>{`

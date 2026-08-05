@@ -13,4 +13,6 @@ export { IdentityCard } from './IdentityCard';
 export { TabContentCard } from './TabContentCard';
 export { DegreeCard } from './DegreeCard';
 export { MetricsCard } from './MetricsCard';
+/** SEMENTARA — alat ukur, hapus bersama perfFlags.ts. */
+export { FlamesToggle } from './FlamesToggle';
 export type { TabType } from './types';
