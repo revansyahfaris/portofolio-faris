@@ -13,6 +13,17 @@ interface EntryPagerProps {
   readonly onNext: () => void;
   /** Nama entri yang sedang tampil, untuk label pembaca layar. */
   readonly current: string;
+  /**
+   * Perpindahan sedang berjalan.
+   *
+   * Tombolnya dinonaktifkan selama itu, dan ini bukan sekadar kerapian:
+   * menekan lagi di tengah gerakan akan memulai perpindahan kedua sebelum yang
+   * pertama sempat masuk tahap terakhirnya, sehingga isinya melompat tanpa
+   * pernah menyusuri lintasannya. Menonaktifkan tombol menjadikan batasan itu
+   * terlihat, alih-alih membiarkan pengguna menekan dan bingung kenapa
+   * geraknya patah.
+   */
+  readonly busy?: boolean;
 }
 
 /** Detail bentuk untuk satu lapisan segitiga (SVG) */
@@ -231,27 +242,63 @@ const PagerButton = memo(function PagerButton({
   type,
   ariaLabel,
   onClick,
+  busy = false,
 }: {
   readonly type: PagerType;
   readonly ariaLabel: string;
   readonly onClick: () => void;
+  readonly busy?: boolean;
 }) {
   const cfg = PAGERS[type];
+
+  /*
+   * Sentuhan tetikus menggeser tombol ke ARAH TUJUANNYA, bukan sekadar
+   * membesarkannya. Isyaratnya karena itu ikut memberi tahu ke mana isinya akan
+   * berpindah — "Back" condong ke kiri, "Next" ke kanan — sebelum tombolnya
+   * ditekan sama sekali.
+   *
+   * Nama kelasnya ditulis UTUH di tiap cabang. Tailwind memindai kode sumber
+   * sebagai teks dan tidak menjalankannya, jadi kelas yang dirangkai dari
+   * potongan tidak akan pernah ikut tergenerasi — gagal diam-diam, tanpa error.
+   */
+  const nudge =
+    cfg.facing === 'left'
+      ? 'group-hover:-translate-x-[0.8vh] group-active:-translate-x-[1.4vh]'
+      : 'group-hover:translate-x-[0.8vh] group-active:translate-x-[1.4vh]';
 
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className="absolute flex cursor-pointer items-center"
+      disabled={busy}
+      className="group absolute flex items-center cursor-pointer disabled:cursor-default"
       style={{
         left: toX(cfg.x),
         top: toY(cfg.y),
         gap: uy(cfg.gap ?? 1),
         transform: toTransform(cfg),
         transformOrigin: toOrigin(cfg),
+
+        /*
+         * Peredupan saat sedang berpindah dipasang di SINI, bukan lewat kelas
+         * disabled:opacity — transform di atas sudah menempati properti yang
+         * sama sekali berbeda, jadi keduanya tidak bertabrakan, dan menuliskan
+         * opacity di satu tempat membuatnya terbaca berdampingan dengan
+         * transisinya.
+         */
+        opacity: busy ? 0.4 : 1,
+        transition: 'opacity 200ms ease-out',
       }}
     >
+      {/*
+        Geseran sentuhan dipasang pada pembungkus TERSENDIRI, bukan pada
+        tombolnya. Tombolnya sudah memakai transform untuk penempatan, sudut,
+        dan regangannya; menambahkan geseran ke rangkaian yang sama berarti
+        menyusunnya ulang setiap kali salah satu penyetel berubah — dan
+        geserannya akan ikut miring mengikuti sudut tombolnya.
+      */}
+      <span className={`flex items-center transition-transform duration-200 ease-out ${nudge}`} style={{ gap: uy(cfg.gap ?? 1) }}>
       {/* Panah SVG */}
       <Arrow layers={cfg.layers} facing={cfg.facing} size={cfg.size} />
 
@@ -270,6 +317,7 @@ const PagerButton = memo(function PagerButton({
       >
         {cfg.text}
       </span>
+      </span>
     </button>
   );
 });
@@ -278,6 +326,7 @@ export const EntryPager = memo(function EntryPager({
   onPrev,
   onNext,
   current,
+  busy = false,
 }: EntryPagerProps) {
   return (
     <>
@@ -285,11 +334,13 @@ export const EntryPager = memo(function EntryPager({
         type="prev"
         ariaLabel={`Pengalaman sebelum ${current}`}
         onClick={onPrev}
+        busy={busy}
       />
       <PagerButton
         type="next"
         ariaLabel={`Pengalaman setelah ${current}`}
         onClick={onNext}
+        busy={busy}
       />
     </>
   );
