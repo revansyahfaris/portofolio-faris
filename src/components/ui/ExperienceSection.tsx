@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { SectionShell } from './shared';
 import {
   ArcTitle,
@@ -9,11 +9,15 @@ import {
   EntryDetails,
   EntryNumber,
   EntryPager,
+  EntrySlide,
   EXPERIENCES,
+  SLIDE,
+  useArcSwap,
   FIELD,
   FieldEllipse,
   PortraitTrack,
   RoleBanner,
+  ArcMotionDebug,
 } from './experience';
 
 /**
@@ -45,8 +49,28 @@ export default function ExperienceSection() {
   const [activeIndex, setActiveIndex] = useState(0);
 
   const total = EXPERIENCES.length;
-  const entry = EXPERIENCES[activeIndex];
-  const step = (delta: number) => setActiveIndex((current) => (current + delta + total) % total);
+
+  /*
+   * Arah langkah disimpan di ref, bukan di state.
+   *
+   * Ia hanya dibaca saat merender dan tidak pernah menjadi alasan untuk
+   * merender ulang — nilainya selalu ditetapkan tepat sebelum activeIndex
+   * berubah, dan perubahan itulah yang memicu render. Menyimpannya sebagai
+   * state hanya menambah satu putaran render tanpa satu pun perbedaan hasil.
+   */
+  const direction = useRef(1);
+
+  const step = (delta: number) => {
+    direction.current = delta > 0 ? 1 : -1;
+    setActiveIndex((current) => (current + delta + total) % total);
+  };
+
+  /*
+   * Isi entri ditahan sampai gerak keluarnya selesai, sehingga pergantian
+   * teksnya terjadi ketika sedang tidak terlihat.
+   */
+  const { shown, phase } = useArcSwap(activeIndex, SLIDE.exit.duration);
+  const entry = EXPERIENCES[shown];
 
   return (
     <SectionShell id="experience">
@@ -64,15 +88,22 @@ export default function ExperienceSection() {
         <FieldEllipse />
         <PortraitTrack imageSrc="/assets/experience/Experience_1.png" />
         <ArcTitle />
+        <ArcMotionDebug />
 
         {/* Nomor urut SECTION pada halaman, bukan nomor entri — angkanya tetap
             saat panah ditekan. */}
         <EntryNumber sectionNumber={4} />
 
-        <RoleBanner role={entry.role} />
-        <EntryDetails company={entry.company} project={entry.project} period={entry.period} />
+        {/* Seluruh isi entri dibungkus SATU pembungkus gerak. Bidang merah,
+            ketiga baris teks, dan tombolnya masing-masing punya sudut dan poros
+            sendiri; menganimasikannya satu per satu berarti tujuh gerakan yang
+            harus dijaga sepakat, dan cukup satu yang berbeda kurvanya untuk
+            membuat kelompoknya tampak terurai saat berpindah. */}
+        <EntrySlide phase={phase} direction={direction.current}>
+          <RoleBanner role={entry.role} />
+          <EntryDetails company={entry.company} project={entry.project} period={entry.period} />
 
-        <DetailButton
+          <DetailButton
           label={`${entry.role} di ${entry.company}`}
           onOpen={() => {
             // Layar rincian belum dirancang. Dibiarkan kosong dengan sengaja,
@@ -82,10 +113,13 @@ export default function ExperienceSection() {
           }}
         />
 
+        </EntrySlide>
+
         <EntryPager
           onPrev={() => step(-1)}
           onNext={() => step(1)}
           current={`${entry.role} di ${entry.company}`}
+          busy={phase !== 'idle'}
         />
       </DesignFrame>
 
