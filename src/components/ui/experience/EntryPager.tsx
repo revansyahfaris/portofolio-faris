@@ -50,7 +50,16 @@ interface PagerConfig extends ShapeTransform {
   readonly labelRatio?: number;
   readonly labelOpacity?: number;
   readonly labelLetterSpacing?: string;
+  /**
+   * Geser teks label, dalam VH.
+   *
+   * Dulu piksel, dan itu cacat: panahnya berukuran vh sehingga ikut menyusut
+   * saat layar mengecil, sementara geseran piksel tidak — labelnya merayap
+   * menjauh dari panahnya. Nilainya dikonversi pada 1vh = 9px, jadi 8.667 di
+   * sini sama persis dengan 78px pada viewport acuan.
+   */
   readonly labelOffsetX?: number;
+  /** Geser teks label tegak, dalam vh. Aturan yang sama. */
   readonly labelOffsetY?: number;
   readonly labelRotate?: number;
 }
@@ -113,7 +122,7 @@ const PAGERS: Record<PagerType, PagerConfig> = {
     labelRatio: 0.62,
     labelOpacity: 0.5,
     labelLetterSpacing: '-0.1em',
-    labelOffsetX: 78,
+    labelOffsetX: 8.667,
     labelOffsetY: 0,
     labelRotate: 5,
   },
@@ -164,7 +173,7 @@ const PAGERS: Record<PagerType, PagerConfig> = {
     labelOpacity: 0.5,
     labelLetterSpacing: '-0.1em',
     labelOffsetX: 0,
-    labelOffsetY: -16,
+    labelOffsetY: -1.778,
     labelRotate: -16,
   },
 };
@@ -255,7 +264,7 @@ const PagerButton = memo(function PagerButton({
           color: XP.white,
           opacity: cfg.labelOpacity ?? 1,
           letterSpacing: cfg.labelLetterSpacing ?? 'normal',
-          transform: `translate(${cfg.labelOffsetX ?? 0}px, ${cfg.labelOffsetY ?? 0}px) rotate(${cfg.labelRotate ?? 0}deg)`,
+          transform: `translate(${cfg.labelOffsetX ?? 0}vh, ${cfg.labelOffsetY ?? 0}vh) rotate(${cfg.labelRotate ?? 0}deg)`,
           transformOrigin: 'center',
         }}
       >

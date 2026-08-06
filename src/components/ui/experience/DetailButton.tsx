@@ -55,9 +55,18 @@ const MARK_FLIP_X = false;
 const MARK_UNDERLAYER_OFFSET = { x: -15, y: 15 }; // 👈 Sekarang angka geseran ini akan langsung bekerja!
 
 /** 📍 PENYETEL TEKS DETAIL (Terpisah dari area pita) */
+/**
+ * Geser teks "Detail" di dalam tombolnya, dalam VH.
+ *
+ * Dulu piksel. Pitanya berukuran vh sehingga ikut menyusut saat layar mengecil,
+ * sementara geseran piksel tidak — teksnya merayap keluar dari pitanya.
+ *
+ * Dikonversi pada 1vh = 9px, jadi 8.889 di sini sama persis dengan 80px pada
+ * viewport acuan.
+ */
 const LABEL_POS = {
-  x: 80, // Geser mendatar teks (px dalam container tombol)
-  y: 5,   // Geser tegak teks (px)
+  x: 8.889,
+  y: 0.556,
 };
 
 /** Ukuran huruf "Detail", dalam vh. */
@@ -141,8 +150,8 @@ export const DetailButton = memo(function DetailButton({
         aria-hidden
         className="absolute font-serif leading-none"
         style={{
-          left: `${LABEL_POS.x}px`,
-          top: `${LABEL_POS.y}px`,
+          left: `${LABEL_POS.x}vh`,
+          top: `${LABEL_POS.y}vh`,
           fontSize: `${LABEL_SIZE}vh`,
           color: XP.ink,
           letterSpacing: LABEL_LETTER_SPACING,

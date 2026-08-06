@@ -1,6 +1,7 @@
 export { EXPERIENCES } from './constants';
 export { XP, FIELD } from './palette';
 export { ArcTitle } from './ArcTitle';
+export { DesignFrame } from './DesignFrame';
 export { FieldEllipse } from './FieldEllipse';
 export { PortraitTrack } from './PortraitTrack';
 export { RoleBanner } from './RoleBanner';

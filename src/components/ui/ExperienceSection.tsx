@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { SectionShell } from './shared';
 import {
   ArcTitle,
+  DesignFrame,
   DetailButton,
   EntryDetails,
   EntryNumber,
@@ -49,41 +50,44 @@ export default function ExperienceSection() {
 
   return (
     <SectionShell id="experience">
+      {/* Alas penuh layar, SENGAJA DI LUAR kerangka. Ia satu-satunya bidang yang
+          memang harus mengisi viewport apa pun rasionya; menaruhnya di dalam
+          kerangka akan menyisakan pita putih di kedua tepi begitu layar lebih
+          lebar daripada kanvasnya. */}
       <div aria-hidden className="absolute inset-0" style={{ backgroundColor: FIELD.background }} />
 
-      {/* Dirender SEBELUM judulnya, jadi hurufnya berada di atas bidang ini. */}
-      <FieldEllipse />
-      <PortraitTrack imageSrc="/assets/experience/Experience_1.png" />
-      <ArcTitle />
+      {/* Kerangka acuan bersama: kotak sebesar kanvas rancangan, dipusatkan.
+          Seluruh isinya memakai koordinat yang sama seperti sebelumnya — yang
+          berubah hanya titik nolnya, dan berubah bersama-sama. */}
+      <DesignFrame>
+        {/* Dirender SEBELUM judulnya, jadi hurufnya berada di atas bidang ini. */}
+        <FieldEllipse />
+        <PortraitTrack imageSrc="/assets/experience/Experience_1.png" />
+        <ArcTitle />
 
-      {/* Dirender SESUDAH judulnya, jadi fotonya menimpa huruf yang lewat di
-          belakangnya — sesuai rancangan, tempat huruf terpotong oleh trek. */}
-      <PortraitTrack />
+        {/* Nomor urut SECTION pada halaman, bukan nomor entri — angkanya tetap
+            saat panah ditekan. */}
+        <EntryNumber sectionNumber={4} />
 
-      {/* Isi entri, dirender paling depan supaya tidak pernah tertutup bentuk
-          mana pun di belakangnya. */}
-      {/* Nomor urut SECTION pada halaman, bukan nomor entri — angkanya tetap
-          saat panah ditekan. */}
-      <EntryNumber sectionNumber={4} />
+        <RoleBanner role={entry.role} />
+        <EntryDetails company={entry.company} project={entry.project} period={entry.period} />
 
-      <RoleBanner role={entry.role} />
-      <EntryDetails company={entry.company} project={entry.project} period={entry.period} />
+        <DetailButton
+          label={`${entry.role} di ${entry.company}`}
+          onOpen={() => {
+            // Layar rincian belum dirancang. Dibiarkan kosong dengan sengaja,
+            // bukan dihubungkan ke tujuan sementara — tautan yang membawa ke
+            // tempat yang salah lebih merugikan daripada tombol yang belum
+            // membawa ke mana-mana.
+          }}
+        />
 
-      <DetailButton
-        label={`${entry.role} di ${entry.company}`}
-        onOpen={() => {
-          // Layar rincian belum dirancang. Dibiarkan kosong dengan sengaja,
-          // bukan dihubungkan ke tujuan sementara — tautan yang membawa ke
-          // tempat yang salah lebih merugikan daripada tombol yang belum
-          // membawa ke mana-mana.
-        }}
-      />
-
-      <EntryPager
-        onPrev={() => step(-1)}
-        onNext={() => step(1)}
-        current={`${entry.role} di ${entry.company}`}
-      />
+        <EntryPager
+          onPrev={() => step(-1)}
+          onNext={() => step(1)}
+          current={`${entry.role} di ${entry.company}`}
+        />
+      </DesignFrame>
 
       {/* Pengumuman untuk pembaca layar. Seluruh perubahan di section ini
           bersifat visual dan tidak satu pun terdengar; baris ini yang
