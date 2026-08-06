@@ -13,14 +13,25 @@ const ELLIPSE: CanvasRect = {
   y: -494,
 };
 
-/** 📍 Lingkaran Pemotong (Cutout) tempat foto ditaruh */
-const CUTTER: CanvasRect = {
-  w: 3029,
-  h: 1558,
-  x: 1780,
-  y: -354,
-};
-
+/**
+ * Bidang tosca. TIDAK lagi dilubangi mask.
+ *
+ * Lubang potongnya dulu digambar di sini sebagai <ellipse> hitam di dalam mask,
+ * SEKALIGUS digambar ulang di PortraitTrack sebagai div CSS. Dua bentuk untuk
+ * satu lubang yang sama — dan keduanya tidak mungkin sepakat begitu layar
+ * melebar, karena urutan transformasinya berlawanan: SVG memutar di ruang
+ * viewBox lalu diregangkan preserveAspectRatio="none", sedangkan CSS mengukur
+ * kotak yang sudah teregang lalu memutarnya. Elips yang diputar-lalu-diregang
+ * bukan bentuk yang sama dengan yang diregang-lalu-diputar. Pada rasio
+ * rancangan keduanya berimpit; di luar itu simpangannya tumbuh mengikuti lebar.
+ *
+ * Sekarang lubangnya cukup digambar SEKALI, di PortraitTrack, sebagai lingkaran
+ * berwarna sama dengan alas halaman. Latar di belakang bidang ini memang putih,
+ * jadi "lubang tembus yang memperlihatkan putih" dan "lingkaran putih di atas
+ * tosca" menghasilkan gambar yang sama persis — tetapi yang kedua hanya
+ * memerlukan satu bentuk, di satu sistem koordinat, sehingga tidak ada yang
+ * bisa menyimpang dari apa pun.
+ */
 export const FieldEllipse = memo(function FieldEllipse() {
   return (
     <div
@@ -32,34 +43,12 @@ export const FieldEllipse = memo(function FieldEllipse() {
         viewBox={`0 0 ${CANVAS.width} ${CANVAS.height}`}
         preserveAspectRatio="none"
       >
-        <defs>
-          {/* 📍 MASKING CUTOUT:
-              Putih = Area Tosca Tetap Tampil
-              Hitam = Area Diberi Lubang Transparan (Cutout) */}
-          <mask id="ellipse-cutout-mask">
-            {/* Tutup seluruh kanvas dengan warna putih */}
-            <rect width={CANVAS.width} height={CANVAS.height} fill="white" />
-
-            {/* Gambar lingkaran hitam untuk MELUBANGI bidang tosca */}
-            <ellipse
-              cx={CUTTER.x + CUTTER.w / 2}
-              cy={CUTTER.y + CUTTER.h / 2}
-              rx={CUTTER.w / 2}
-              ry={CUTTER.h / 2}
-              fill="black"
-              transform={`rotate(-25, ${CUTTER.x + CUTTER.w / 2}, ${CUTTER.y + CUTTER.h / 2})`}
-            />
-          </mask>
-        </defs>
-
-        {/* Bidang Lonjong Tosca yang sudah dilubangi */}
         <ellipse
           cx={ELLIPSE.x + ELLIPSE.w / 2}
           cy={ELLIPSE.y + ELLIPSE.h / 2}
           rx={ELLIPSE.w / 2}
           ry={ELLIPSE.h / 2}
           fill={FIELD.ellipse}
-          mask="url(#ellipse-cutout-mask)"
         />
       </svg>
     </div>

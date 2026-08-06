@@ -117,6 +117,19 @@ export const ux = (n: number, drift = 0) =>
 export const uy = (n: number, drift = 0) =>
   withDrift(`calc(${UNIT_Y} * ${trim(n)})`, drift);
 
+/**
+ * Persentase terhadap induknya, dengan penyetelan windowed.
+ *
+ * Ada karena persen BOLEH dijumlahkan dengan panjang di dalam calc():
+ * `calc(95% + 12px)` sah, sedangkan `calc(0.95 + 12px)` tidak. Inilah jalan
+ * yang tersedia untuk membesar-mengecilkan sesuatu mengikuti lebar layar —
+ * bukan lewat scale(), yang menuntut bilangan tanpa satuan dan karena itu
+ * mustahil diturunkan dari ukuran layar.
+ *
+ * Dipakai pada width dan height, bukan pada transform.
+ */
+export const pct = (n: number, drift = 0) => withDrift(`${trim(n)}%`, drift);
+
 /** Piksel kanvas menjadi posisi mendatar yang ikut meregang. */
 export const toX = (px: number, drift = 0) => ux((px / CANVAS.height) * 100, drift);
 
@@ -136,9 +149,12 @@ export const toY = (px: number, drift = 0) => uy((px / CANVAS.height) * 100, dri
  * Letaknya mengikuti pelebaran supaya tetap berada di bagian komposisi yang
  * sama, tetapi bentuknya sendiri tidak boleh berubah proporsi.
  */
-export const rectStyle = (rect: CanvasRect): CSSProperties => ({
-  left: toX(rect.x),
-  top: toY(rect.y),
+export const rectStyle = (
+  rect: CanvasRect,
+  drift?: { readonly x?: number; readonly y?: number },
+): CSSProperties => ({
+  left: toX(rect.x, drift?.x ?? 0),
+  top: toY(rect.y, drift?.y ?? 0),
   width: toY(rect.w),
   height: toY(rect.h),
 });
