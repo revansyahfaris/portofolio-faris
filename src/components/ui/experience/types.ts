@@ -5,7 +5,9 @@ export type EmploymentType =
   | 'Freelance'
   | 'Part-time'
   | 'Organization'
-  | 'Research';
+  | 'Research'
+  | 'Intern'
+  ;
 
 /** Satu angka dampak yang bisa diverifikasi, bukan klaim kualitatif. */
 export interface ImpactMetric {
