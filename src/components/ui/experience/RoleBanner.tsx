@@ -1,7 +1,7 @@
 // File: src/components/ui/experience/RoleBanner.tsx
 
 import { memo } from 'react';
-import { rectStyle, toVh } from './canvas';
+import { rectStyle, toX, toY, uy } from './canvas';
 import type { CanvasRect } from './canvas';
 import { XP } from './palette';
 
@@ -82,10 +82,10 @@ export const RoleBanner = memo(function RoleBanner({ role }: RoleBannerProps) {
       <p
         className="pointer-events-none absolute font-serif leading-tight"
         style={{
-          left: toVh(ROLE.x),
-          top: toVh(ROLE.y),
-          width: toVh(ROLE.w),
-          fontSize: `${ROLE.size}vh`,
+          left: toX(ROLE.x),
+          top: toY(ROLE.y),
+          width: toY(ROLE.w),
+          fontSize: uy(ROLE.size),
           color: XP.white,
           transform: `rotate(${ROLE.rotate}deg)`,
           // Titik putarnya di ujung KIRI ATAS, bukan di tengah. Dengan poros di

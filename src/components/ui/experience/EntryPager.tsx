@@ -3,7 +3,7 @@
 'use client';
 
 import { memo } from 'react';
-import { toVh } from './canvas';
+import { toX, toY, uy } from './canvas';
 import { XP } from './palette';
 import { toOrigin, toTransform } from './transform';
 import type { ShapeTransform } from './transform';
@@ -205,8 +205,8 @@ const Arrow = memo(function Arrow({
       aria-hidden
       viewBox="0 0 100 100"
       style={{
-        width: `${size}vh`,
-        height: `${size}vh`,
+        width: uy(size),
+        height: uy(size),
         display: 'block',
         transform: facing === 'left' ? 'rotate(180deg)' : undefined,
         overflow: 'visible',
@@ -245,9 +245,9 @@ const PagerButton = memo(function PagerButton({
       aria-label={ariaLabel}
       className="absolute flex cursor-pointer items-center"
       style={{
-        left: toVh(cfg.x),
-        top: toVh(cfg.y),
-        gap: `${cfg.gap ?? 1}vh`,
+        left: toX(cfg.x),
+        top: toY(cfg.y),
+        gap: uy(cfg.gap ?? 1),
         transform: toTransform(cfg),
         transformOrigin: toOrigin(cfg),
       }}
@@ -260,11 +260,11 @@ const PagerButton = memo(function PagerButton({
         aria-hidden
         className="font-serif leading-none"
         style={{
-          fontSize: `${cfg.size * (cfg.labelRatio ?? 0.62)}vh`,
+          fontSize: uy(cfg.size * (cfg.labelRatio ?? 0.62)),
           color: XP.white,
           opacity: cfg.labelOpacity ?? 1,
           letterSpacing: cfg.labelLetterSpacing ?? 'normal',
-          transform: `translate(${cfg.labelOffsetX ?? 0}vh, ${cfg.labelOffsetY ?? 0}vh) rotate(${cfg.labelRotate ?? 0}deg)`,
+          transform: `translate(${uy(cfg.labelOffsetX ?? 0)}, ${uy(cfg.labelOffsetY ?? 0)}) rotate(${cfg.labelRotate ?? 0}deg)`,
           transformOrigin: 'center',
         }}
       >

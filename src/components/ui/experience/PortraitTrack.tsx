@@ -1,36 +1,32 @@
 // File: src/components/ui/experience/PortraitTrack.tsx
 
 import { memo } from 'react';
-import { rectStyle } from './canvas';
+import { rectStyle, uy } from './canvas';
 import type { CanvasRect } from './canvas';
 
-/** 📍 Lingkaran Pemotong (Ukurannya persis sama dengan CUTTER di FieldEllipse) */
+/** 📍 Lingkaran Pemotong (Cutout) */
 const CUTTER: CanvasRect = {
   w: 3029,
   h: 1558,
-  x: 1770,
+  x: 1820,
   y: -340,
 };
 
 const ROTATION_ANGLE = -25;
 
 interface PortraitTrackProps {
-  /** URL foto karakter/diri */
   readonly imageSrc?: string;
   readonly scale?: number;
-  /**
-   * Geser foto mendatar di dalam bingkainya, dalam VH.
-   *
-   * Dulu piksel, dan itu cacat: cutout-nya berukuran vh sehingga ikut menyusut
-   * saat layar mengecil, sementara geseran piksel tetap sebesar itu juga. Foto
-   * karena itu merayap keluar dari lubangnya begitu jendela diperkecil.
-   *
-   * Nilainya dikonversi pada 1vh = 9px (tinggi viewport acuan 900px), jadi -50
-   * di sini menghasilkan piksel yang sama persis dengan -450px sebelumnya.
-   */
   readonly offsetX?: number;
-  /** Geser foto tegak, dalam vh. Aturan yang sama. */
   readonly offsetY?: number;
+
+  // 📍 TAMBAHAN UNTUK PENYETELAN WINDOWED FOTO:
+  /** Geser foto mendatar saat layar melebar (Windowed) */
+  readonly driftX?: number;
+  /** Geser foto tegak saat layar melebar (Windowed) */
+  readonly driftY?: number;
+  /** Pembesaran/pengecilan skala foto saat layar melebar (Windowed) */
+  readonly scaleDrift?: number;
 }
 
 export const PortraitTrack = memo(function PortraitTrack({
@@ -38,6 +34,10 @@ export const PortraitTrack = memo(function PortraitTrack({
   scale = 0.95,
   offsetX = -50,
   offsetY = 22.222,
+  // 📍 Atur nilai bawaan windowed di sini:
+  driftX = 0,       // Positif = geser kanan, Negatif = geser kiri
+  driftY = 0,       // Positif = geser bawah, Negatif = geser atas
+  scaleDrift = 0,   // Positif = membesar, Negatif = mengecil
 }: PortraitTrackProps) {
   return (
     <div
@@ -50,15 +50,14 @@ export const PortraitTrack = memo(function PortraitTrack({
         transformOrigin: 'center',
       }}
     >
-      {/* Jika ada foto, tampilkan di dalam lingkaran cutout ini */}
       {imageSrc ? (
         <img
           src={imageSrc}
           alt="Portrait"
           className="h-full w-full object-contain object-center"
           style={{
-            // 📍 FIX: Masukkan offsetX, offsetY, dan scale variabel di sini!
-            transform: `rotate(${-ROTATION_ANGLE}deg) translate(${offsetX}vh, ${offsetY}vh) scale(${scale})`,
+            // 📍 Masukkan driftX, driftY, dan scaleDrift ke dalam fungsi uy()
+            transform: `rotate(${-ROTATION_ANGLE}deg) translate(${uy(offsetX, driftX)}, ${uy(offsetY, driftY)}) scale(${scale + scaleDrift})`,
             transformOrigin: 'center',
           }}
         />

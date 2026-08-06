@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import type { ReactNode } from 'react';
-import { CANVAS } from './canvas';
+import { CANVAS, ux, uy } from './canvas';
 
 /**
  * Perbandingan lebar terhadap tinggi kanvas rancangan. 2880 / 1800 = 1.6.
@@ -59,12 +59,20 @@ export const DesignFrame = memo(function DesignFrame({
 }) {
   return (
     <div
-      className="absolute top-0"
+      className="absolute top-1/2"
       style={{
-        width: `${ASPECT * 100}vh`,
-        height: '100vh',
+        // Dipusatkan pada KEDUA sumbu sekarang, bukan mendatar saja. Sejak
+        // satuannya ikut lebar, tinggi kerangka bisa melebihi tinggi layar pada
+        // rasio yang lebih sempit dari rancangan — dan kelebihan itu harus
+        // terpotong merata di atas dan bawah, bukan menumpuk di bawah saja.
+        // Memakai satuan komposisi yang sama dengan seluruh isinya. Ini yang
+        // membuat kerangkanya ikut membesar saat layar melebar — kalau tetap
+        // dalam vh, isinya membesar sementara kotaknya tidak, dan seluruh
+        // komposisi akan meleset keluar dari batas yang memusatkannya.
+        width: ux(ASPECT * 100),
+        height: uy(100),
         left: '50%',
-        transform: 'translateX(-50%)',
+        transform: 'translate(-50%, -50%)',
       }}
     >
       {children}

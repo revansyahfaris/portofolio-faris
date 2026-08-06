@@ -3,7 +3,7 @@
 'use client';
 
 import { memo } from 'react';
-import { rectStyle, toVh } from './canvas';
+import { rectStyle, uy } from './canvas';
 import type { CanvasRect } from './canvas';
 import { XP } from './palette';
 import { toOrigin, toTransform } from './transform';
@@ -150,9 +150,9 @@ export const DetailButton = memo(function DetailButton({
         aria-hidden
         className="absolute font-serif leading-none"
         style={{
-          left: `${LABEL_POS.x}vh`,
-          top: `${LABEL_POS.y}vh`,
-          fontSize: `${LABEL_SIZE}vh`,
+          left: uy(LABEL_POS.x),
+          top: uy(LABEL_POS.y),
+          fontSize: uy(LABEL_SIZE),
           color: XP.ink,
           letterSpacing: LABEL_LETTER_SPACING,
           scale: 1.1,

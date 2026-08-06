@@ -1,7 +1,7 @@
 // File: src/components/ui/experience/FieldEllipse.tsx
 
 import { memo } from 'react';
-import { CANVAS, rectStyle, toVh } from './canvas';
+import { CANVAS } from './canvas';
 import type { CanvasRect } from './canvas';
 import { FIELD } from './palette';
 

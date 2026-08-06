@@ -9,7 +9,7 @@ export { EntryDetails } from './EntryDetails';
 export { DetailButton } from './DetailButton';
 export { EntryPager } from './EntryPager';
 export { EntryNumber } from './EntryNumber';
-export { CANVAS, toVh, rectStyle } from './canvas';
+export { CANVAS, ux, uy, toX, toY, rectStyle, elasticRectStyle } from './canvas';
 export type { CanvasRect } from './canvas';
 export { toTransform, toOrigin } from './transform';
 export type { ShapeTransform } from './transform';

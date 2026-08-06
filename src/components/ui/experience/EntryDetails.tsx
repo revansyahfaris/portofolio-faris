@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import type { ReactNode } from 'react';
-import { CANVAS, toVh } from './canvas';
+import { CANVAS, toX, toY, uy } from './canvas';
 import { XP } from './palette';
 
 interface EntryDetailsProps {
@@ -63,7 +63,7 @@ const PlacedText = memo(function PlacedText({
   const rightBoundaryPx = at.x + at.w;
 
   // 📍 Konversi jarak dari tepi kanan kanvas ke vh: (CANVAS.width - rightBoundaryPx)
-  const rightInVh = toVh(CANVAS.width - rightBoundaryPx);
+  const rightInVh = toX(CANVAS.width - rightBoundaryPx);
 
   return (
     <p
@@ -72,9 +72,9 @@ const PlacedText = memo(function PlacedText({
         // 📍 KUNCI SISI KANAN MUTLAK:
         // Menggunakan `right` alih-alih `left` memastikan batas kanan terkunci mati di titik (x + w)
         right: rightInVh,
-        top: toVh(at.y),
-        maxWidth: toVh(at.w), // 📍 Gunakan maxWidth agar lebar kotak menyesuaikan teks ke arah kiri
-        fontSize: `${at.size}vh`,
+        top: toY(at.y),
+        maxWidth: toY(at.w), // 📍 Gunakan maxWidth agar lebar kotak menyesuaikan teks ke arah kiri
+        fontSize: uy(at.size),
         color: XP.white,
         transform: `rotate(${at.rotate}deg)`,
         // 📍 Poros di KANAN ATAS agar saat diputar batas kanannya tidak bergeser
