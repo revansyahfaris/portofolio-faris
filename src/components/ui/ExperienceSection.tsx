@@ -2,7 +2,18 @@
 
 import { useState } from 'react';
 import { SectionShell } from './shared';
-import { ArcTitle, EXPERIENCES, FIELD, FieldEllipse, PortraitTrack } from './experience';
+import {
+  ArcTitle,
+  DetailButton,
+  EntryDetails,
+  EntryNumber,
+  EntryPager,
+  EXPERIENCES,
+  FIELD,
+  FieldEllipse,
+  PortraitTrack,
+  RoleBanner,
+} from './experience';
 
 /**
  * ExperienceSection.
@@ -49,26 +60,39 @@ export default function ExperienceSection() {
           belakangnya — sesuai rancangan, tempat huruf terpotong oleh trek. */}
       <PortraitTrack />
 
-      {/* PERANCAH SEMENTARA — dihapus begitu navigasi sungguhannya dipasang. */}
-      <div className="absolute bottom-4 left-4 z-50 flex gap-2">
-        <button
-          type="button"
-          onClick={() => step(-1)}
-          className="bg-black px-3 py-2 font-mono text-xs font-bold uppercase text-white"
-        >
-          ◀
-        </button>
-        <button
-          type="button"
-          onClick={() => step(1)}
-          className="bg-black px-3 py-2 font-mono text-xs font-bold uppercase text-white"
-        >
-          ▶
-        </button>
-        <span className="bg-black px-3 py-2 font-mono text-xs font-bold uppercase text-white">
-          {entry.company} · {entry.project} · {activeIndex + 1}/{total}
-        </span>
-      </div>
+      {/* Isi entri, dirender paling depan supaya tidak pernah tertutup bentuk
+          mana pun di belakangnya. */}
+      {/* Nomor urut SECTION pada halaman, bukan nomor entri — angkanya tetap
+          saat panah ditekan. */}
+      <EntryNumber sectionNumber={4} />
+
+      <RoleBanner role={entry.role} />
+      <EntryDetails company={entry.company} project={entry.project} period={entry.period} />
+
+      <DetailButton
+        label={`${entry.role} di ${entry.company}`}
+        onOpen={() => {
+          // Layar rincian belum dirancang. Dibiarkan kosong dengan sengaja,
+          // bukan dihubungkan ke tujuan sementara — tautan yang membawa ke
+          // tempat yang salah lebih merugikan daripada tombol yang belum
+          // membawa ke mana-mana.
+        }}
+      />
+
+      <EntryPager
+        onPrev={() => step(-1)}
+        onNext={() => step(1)}
+        current={`${entry.role} di ${entry.company}`}
+      />
+
+      {/* Pengumuman untuk pembaca layar. Seluruh perubahan di section ini
+          bersifat visual dan tidak satu pun terdengar; baris ini yang
+          menyuarakannya, disembunyikan dari mata tetapi tetap dibacakan. */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {`${entry.role}, ${entry.company}, ${entry.project}, ${entry.period}. Entri ${
+          activeIndex + 1
+        } dari ${total}.`}
+      </p>
     </SectionShell>
   );
 }

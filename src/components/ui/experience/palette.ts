@@ -19,8 +19,16 @@ export const XP = {
   /** Merah bidang segitiga tempat nama jabatan. */
   red: '#ff0000',
 
-  /** Kuning tombol Detail. */
+  /** Kuning tombol Detail, lapisan atas. */
   yellow: '#f7ff23',
+
+  /**
+   * Kuning lapisan bawah tombol Detail.
+   *
+   * PERKIRAAN — kuturunkan dari `yellow` dengan menurunkan terangnya, bukan
+   * diambil dari rancanganmu. Ganti kalau meleset.
+   */
+  yellowDeep: '#b8c400',
 
   /** Tosca terang untuk panah navigasi. */
   tealBright: '#1defcf',

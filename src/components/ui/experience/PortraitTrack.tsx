@@ -8,8 +8,8 @@ import type { CanvasRect } from './canvas';
 const CUTTER: CanvasRect = {
   w: 3029,
   h: 1558,
-  x: 1780,
-  y: -354,
+  x: 1770,
+  y: -340,
 };
 
 const ROTATION_ANGLE = -25;
